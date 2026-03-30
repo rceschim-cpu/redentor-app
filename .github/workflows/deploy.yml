@@ -35,6 +35,13 @@ jobs:
       - name: Build web
         run: npx expo export --platform web
 
+      - name: Fix asset paths for GitHub Pages
+        run: |
+          sed -i 's|src="/_expo/|src="/redentor-app/_expo/|g' dist/index.html
+          sed -i 's|href="/_expo/|href="/redentor-app/_expo/|g' dist/index.html
+          sed -i 's|src="/assets/|src="/redentor-app/assets/|g' dist/index.html
+          sed -i 's|href="/assets/|href="/redentor-app/assets/|g' dist/index.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
