@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Comunidade do Redentor",
+    "slug": "redentor-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3E3530"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "br.org.redentor.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3E3530"
+      },
+      "package": "br.org.redentor.app"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "baseUrl": "/redentor-app"
+    }
+  }
+}
