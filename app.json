@@ -28,7 +28,7 @@
     ],
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "baseUrl": "/redentor-app"
     }
   }
