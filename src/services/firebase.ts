@@ -2,15 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Substitua com as configurações do seu projeto Firebase:
-// Console → Configurações do projeto → Seus apps → SDK setup
 const firebaseConfig = {
-  apiKey: 'COLE_AQUI',
-  authDomain: 'COLE_AQUI',
-  projectId: 'COLE_AQUI',
-  storageBucket: 'COLE_AQUI',
-  messagingSenderId: 'COLE_AQUI',
-  appId: 'COLE_AQUI',
+  apiKey: 'AIzaSyCE8zOz0nEqlHWqnIguB7tzkC6_HwWTaVM',
+  authDomain: 'redentor-app.firebaseapp.com',
+  projectId: 'redentor-app',
+  storageBucket: 'redentor-app.firebasestorage.app',
+  messagingSenderId: '405698183705',
+  appId: '1:405698183705:web:1c7c66fffc50097562e088',
 };
 
 const app = initializeApp(firebaseConfig);

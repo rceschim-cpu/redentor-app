@@ -2,6 +2,8 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -15,6 +17,11 @@ export async function signOut() {
 
 export async function resetPassword(email: string) {
   return sendPasswordResetEmail(auth, email);
+}
+
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
 }
 
 export function translateAuthError(code: string): string {

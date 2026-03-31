@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { signIn, resetPassword, translateAuthError } from '../services/auth';
+import { signIn, resetPassword, signInWithGoogle, translateAuthError } from '../services/auth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -102,6 +102,28 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>ou</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.btnGoogle}
+          onPress={async () => {
+            try {
+              await signInWithGoogle();
+            } catch (e: any) {
+              if (e.code !== 'auth/popup-closed-by-user') {
+                Alert.alert('Erro', translateAuthError(e.code));
+              }
+            }
+          }}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnGoogleText}>🔵  Entrar com Google</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.btnLink} onPress={handleForgotPassword}>
           <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
         </TouchableOpacity>
@@ -158,6 +180,18 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { fontSize: 12, color: Colors.textMuted },
+  btnGoogle: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  btnGoogleText: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
   btnLink: { alignItems: 'center', paddingVertical: 8 },
   btnLinkText: { color: Colors.textSecondary, fontSize: 14 },
   footer: {
