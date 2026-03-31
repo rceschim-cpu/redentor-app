@@ -1,0 +1,30 @@
+import {
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
+import { auth } from './firebase';
+
+export async function signIn(email: string, password: string) {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signOut() {
+  return firebaseSignOut(auth);
+}
+
+export async function resetPassword(email: string) {
+  return sendPasswordResetEmail(auth, email);
+}
+
+export function translateAuthError(code: string): string {
+  const map: Record<string, string> = {
+    'auth/invalid-email': 'E-mail inválido.',
+    'auth/user-not-found': 'Usuário não encontrado.',
+    'auth/wrong-password': 'Senha incorreta.',
+    'auth/invalid-credential': 'E-mail ou senha incorretos.',
+    'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
+    'auth/network-request-failed': 'Sem conexão. Verifique sua internet.',
+  };
+  return map[code] ?? 'Erro ao entrar. Tente novamente.';
+}

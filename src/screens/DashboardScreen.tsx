@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,44 +9,66 @@ import {
   Image,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { ArchBar, Avatar, StatusBadge } from '../components';
-import { mockMembers } from '../data/mock';
+import { ArchBar, Avatar } from '../components';
+import { useAuth } from '../context/AuthContext';
+import { signOut } from '../services/auth';
+import { getMembers } from '../services/members';
+import { getGroups } from '../services/groups';
 
 const MODULES = [
   { icon: '👥', label: 'Membros', sub: 'Cadastro geral', color: '#EDE9F7', screen: 'Members' },
-  { icon: '🏘️', label: 'Pequenos Grupos', sub: '14 grupos ativos', color: '#E8F4EA', screen: 'Groups' },
+  { icon: '🏘️', label: 'Pequenos Grupos', sub: 'Grupos ativos', color: '#E8F4EA', screen: 'Groups' },
   { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: null },
   { icon: '▶️', label: 'Cultos', sub: 'Links ao vivo', color: '#FDF0E8', screen: null },
   { icon: '🅿️', label: 'Estacionamento', sub: 'Gestão de vagas', color: '#F0F0EE', screen: null },
 ];
 
 export default function DashboardScreen({ navigation }: any) {
-  const recentMembers = mockMembers.slice(0, 2);
+  const { user } = useAuth();
+  const [memberCount, setMemberCount] = useState('—');
+  const [groupCount, setGroupCount] = useState('—');
+
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
+
+  useEffect(() => {
+    getMembers()
+      .then((m) => setMemberCount(m.length.toString()))
+      .catch(() => setMemberCount('—'));
+    getGroups()
+      .then((g) => setGroupCount(g.length.toString()))
+      .catch(() => setGroupCount('—'));
+  }, []);
+
+  const handleSignOut = () => {
+    Alert.alert('Sair', 'Deseja encerrar a sessão?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sair', style: 'destructive', onPress: () => signOut() },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
-      {/* Hero */}
       <View style={styles.hero}>
         <ArchBar />
         <View style={styles.heroRow}>
           <Image
-            source={require('../../logo2color.png')}
+            source={require('../../assets/logo.png')}
             style={styles.heroLogo}
             resizeMode="contain"
           />
-          <Avatar name="João Silva" size={38} index={1} />
+          <TouchableOpacity onPress={handleSignOut}>
+            <Avatar name={displayName} size={38} index={1} />
+          </TouchableOpacity>
         </View>
         <Text style={styles.greeting}>Bem-vindo de volta</Text>
-        <Text style={styles.name}>João Silva</Text>
+        <Text style={styles.name}>{displayName}</Text>
       </View>
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { num: '248', label: 'Membros' },
-            { num: '14', label: 'Grupos' },
-            { num: '3', label: 'Eventos' },
+            { num: memberCount, label: 'Membros' },
+            { num: groupCount, label: 'Grupos' },
           ].map((s) => (
             <View key={s.label} style={styles.statCard}>
               <Text style={styles.statNum}>{s.num}</Text>
@@ -55,7 +77,6 @@ export default function DashboardScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* Módulos */}
         <Text style={styles.sectionTitle}>MÓDULOS</Text>
         <View style={styles.grid}>
           {MODULES.map((m) => (
@@ -66,7 +87,7 @@ export default function DashboardScreen({ navigation }: any) {
               onPress={() =>
                 m.screen
                   ? navigation.navigate(m.screen)
-                  : Alert.alert(`${m.label}`, 'Em breve!')
+                  : Alert.alert(m.label, 'Em breve!')
               }
             >
               <View style={[styles.moduleIcon, { backgroundColor: m.color }]}>
@@ -77,29 +98,6 @@ export default function DashboardScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Membros recentes */}
-        <Text style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>NOVOS MEMBROS</Text>
-        {recentMembers.map((m, i) => (
-          <TouchableOpacity
-            key={m.id}
-            style={styles.memberRow}
-            activeOpacity={0.75}
-            onPress={() =>
-              navigation.navigate('Members', {
-                screen: 'MemberDetail',
-                params: { memberId: m.id },
-              })
-            }
-          >
-            <Avatar name={m.name} size={38} index={m.avatarIndex ?? i} />
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>{m.name}</Text>
-              <Text style={styles.memberSub}>Adicionado recentemente</Text>
-            </View>
-            <StatusBadge status={m.status} />
-          </TouchableOpacity>
-        ))}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -115,7 +113,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
-  heroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
+  heroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
   heroLogo: { width: 140, height: 52 },
   greeting: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 2 },
   name: { fontSize: 22, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
@@ -146,18 +149,4 @@ const styles = StyleSheet.create({
   moduleEmoji: { fontSize: 16 },
   moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   moduleSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  memberRow: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 8,
-  },
-  memberInfo: { flex: 1 },
-  memberName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  memberSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,64 +7,71 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, Card, DetailRow, PrimaryButton } from '../components';
-import { mockGroups, mockMembers } from '../data/mock';
+import { Group } from '../types';
+import { getGroups, getGroup } from '../services/groups';
 
 // ─── Lista de Grupos ───────────────────────────────────────────────────────
 export function GroupsListScreen({ navigation }: any) {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getGroups()
+      .then(setGroups)
+      .catch(() => Alert.alert('Erro', 'Não foi possível carregar os grupos.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={mockGroups}
+        data={groups}
         keyExtractor={(g) => g.id}
         contentContainerStyle={styles.list}
-        renderItem={({ item: group }) => {
-          const leader = mockMembers.find((m) => m.id === group.leaderId);
-          return (
-            <TouchableOpacity
-              style={styles.groupCard}
-              activeOpacity={0.75}
-              onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
-            >
-              <View style={styles.groupTop}>
-                <View style={styles.groupIconWrap}>
-                  <Text style={styles.groupEmoji}>{group.icon}</Text>
-                </View>
-                <View style={styles.groupMeta}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  <Text style={styles.groupLeader}>
-                    Líder: {leader?.name ?? 'Não definido'}
-                  </Text>
-                </View>
+        ListEmptyComponent={
+          <Text style={styles.empty}>Nenhum grupo cadastrado.</Text>
+        }
+        renderItem={({ item: group }) => (
+          <TouchableOpacity
+            style={styles.groupCard}
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+          >
+            <View style={styles.groupTop}>
+              <View style={styles.groupIconWrap}>
+                <Text style={styles.groupEmoji}>{group.icon ?? '🏠'}</Text>
               </View>
-              <View style={styles.pillRow}>
-                <View style={styles.pillBlue}>
-                  <Text style={styles.pillBlueText}>{group.memberIds.length} membros</Text>
-                </View>
-                <View style={styles.pillGreen}>
-                  <Text style={styles.pillGreenText}>
-                    {group.meetingDay} · {group.meetingTime}
-                  </Text>
-                </View>
-                <View
-                  style={
-                    group.status === 'ativo' ? styles.pillGreen : styles.pillOrange
-                  }
-                >
-                  <Text
-                    style={
-                      group.status === 'ativo' ? styles.pillGreenText : styles.pillOrangeText
-                    }
-                  >
-                    {group.status === 'ativo' ? 'Ativo' : 'Em formação'}
-                  </Text>
-                </View>
+              <View style={styles.groupMeta}>
+                <Text style={styles.groupName}>{group.name}</Text>
+                <Text style={styles.groupLeader}>
+                  {group.meetingDay} · {group.meetingTime}
+                </Text>
               </View>
-            </TouchableOpacity>
-          );
-        }}
+            </View>
+            <View style={styles.pillRow}>
+              <View style={styles.pillBlue}>
+                <Text style={styles.pillBlueText}>{(group.memberIds ?? []).length} membros</Text>
+              </View>
+              <View style={group.status === 'ativo' ? styles.pillGreen : styles.pillOrange}>
+                <Text style={group.status === 'ativo' ? styles.pillGreenText : styles.pillOrangeText}>
+                  {group.status === 'ativo' ? 'Ativo' : 'Em formação'}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
       />
       <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('Novo Grupo', 'Em breve!')}>
         <Text style={styles.fabText}>＋</Text>
@@ -76,20 +83,38 @@ export function GroupsListScreen({ navigation }: any) {
 // ─── Detalhe do Grupo ─────────────────────────────────────────────────────
 export function GroupDetailScreen({ route }: any) {
   const { groupId } = route.params;
-  const group = mockGroups.find((g) => g.id === groupId);
+  const [group, setGroup] = useState<Group | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!group) return null;
+  useEffect(() => {
+    getGroup(groupId)
+      .then(setGroup)
+      .catch(() => Alert.alert('Erro', 'Grupo não encontrado.'))
+      .finally(() => setLoading(false));
+  }, [groupId]);
 
-  const members = mockMembers.filter((m) => group.memberIds.includes(m.id));
-  const leader = mockMembers.find((m) => m.id === group.leaderId);
-  const coLeader = mockMembers.find((m) => m.id === group.coLeaderId);
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!group) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.empty}>Grupo não encontrado.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.groupHero}>
         <View style={styles.heroIconRow}>
           <View style={styles.heroIconWrap}>
-            <Text style={styles.heroEmoji}>{group.icon}</Text>
+            <Text style={styles.heroEmoji}>{group.icon ?? '🏠'}</Text>
           </View>
           <View>
             <Text style={styles.heroName}>{group.name}</Text>
@@ -101,9 +126,8 @@ export function GroupDetailScreen({ route }: any) {
         </View>
         <View style={styles.heroStats}>
           {[
-            { num: group.memberIds.length.toString(), lbl: 'Membros' },
-            { num: '95%', lbl: 'Presença' },
-            { num: '2 anos', lbl: 'Ativo' },
+            { num: (group.memberIds ?? []).length.toString(), lbl: 'Membros' },
+            { num: group.status === 'ativo' ? 'Ativo' : 'Formação', lbl: 'Status' },
           ].map((s) => (
             <View key={s.lbl} style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{s.num}</Text>
@@ -116,27 +140,13 @@ export function GroupDetailScreen({ route }: any) {
       <ScrollView style={styles.detailBody} showsVerticalScrollIndicator={false}>
         <Card style={{ marginBottom: 12 }}>
           <Text style={styles.cardTitle}>INFORMAÇÕES</Text>
-          <DetailRow label="Líder" value={leader?.name} accent />
-          {coLeader && <DetailRow label="Co-líder" value={coLeader.name} />}
-          <DetailRow label="Local" value={group.location} />
-          <DetailRow label="Bairro" value={group.neighborhood} />
+          {group.location && <DetailRow label="Local" value={group.location} />}
+          {group.neighborhood && <DetailRow label="Bairro" value={group.neighborhood} />}
         </Card>
-
-        <Text style={styles.sectionTitle}>MEMBROS DO GRUPO</Text>
-        {members.map((m, i) => (
-          <View key={m.id} style={styles.memberChip}>
-            <Avatar name={m.name} size={34} index={m.avatarIndex ?? i} />
-            <Text style={styles.chipName}>{m.name}</Text>
-            <View style={styles.pillBlue}>
-              <Text style={styles.pillBlueText}>Membro</Text>
-            </View>
-          </View>
-        ))}
 
         <PrimaryButton
           label="+ Adicionar Membro"
           onPress={() => Alert.alert('Adicionar', 'Em breve!')}
-          // eslint-disable-next-line react-native/no-inline-styles
         />
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -146,6 +156,8 @@ export function GroupDetailScreen({ route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { textAlign: 'center', color: Colors.textMuted, marginTop: 40, fontSize: 14 },
   list: { padding: Spacing.md, gap: 10 },
   groupCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 14, borderWidth: 1, borderColor: Colors.border },
   groupTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
@@ -175,7 +187,4 @@ const styles = StyleSheet.create({
   heroStatLbl: { fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', marginTop: 2 },
   detailBody: { flex: 1, padding: Spacing.md },
   cardTitle: { fontSize: 10, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 8, marginTop: 4 },
-  memberChip: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
-  chipName: { flex: 1, fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
 });

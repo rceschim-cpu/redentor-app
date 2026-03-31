@@ -1,8 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
 import { Colors } from '../theme';
+import { useAuth } from '../context/AuthContext';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -88,19 +89,31 @@ function MainTabs() {
         tabBarInactiveTintColor: Colors.textMuted,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Início', headerStyle: { backgroundColor: Colors.primary }, headerTintColor: '#fff', headerShown: false }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Início', headerShown: false }} />
       <Tab.Screen name="Members" component={MembersNavigator} options={{ title: 'Membros' }} />
       <Tab.Screen name="Groups" component={GroupsNavigator} options={{ title: 'Grupos' }} />
-      <Tab.Screen name="Profile" component={DashboardScreen} options={{ title: 'Perfil' }} />
     </Tab.Navigator>
   );
 }
 
 export default function RootNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background }}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      <RootStack.Screen name="Login" component={LoginScreen} />
-      <RootStack.Screen name="Main" component={MainTabs} />
+      {user ? (
+        <RootStack.Screen name="Main" component={MainTabs} />
+      ) : (
+        <RootStack.Screen name="Login" component={LoginScreen} />
+      )}
     </RootStack.Navigator>
   );
 }

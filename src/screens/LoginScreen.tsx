@@ -8,21 +8,44 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
   Image,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
+import { signIn, resetPassword, translateAuthError } from '../services/auth';
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: implementar autenticação real (Firebase/Supabase)
-    if (!email || !password) {
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
       Alert.alert('Preencha todos os campos');
       return;
     }
-    navigation.replace('Main');
+    setLoading(true);
+    try {
+      await signIn(email.trim(), password);
+      // navegação automática via AuthContext
+    } catch (e: any) {
+      Alert.alert('Erro ao entrar', translateAuthError(e.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Informe seu e-mail primeiro para recuperar a senha.');
+      return;
+    }
+    try {
+      await resetPassword(email.trim());
+      Alert.alert('E-mail enviado', 'Verifique sua caixa de entrada para redefinir a senha.');
+    } catch (e: any) {
+      Alert.alert('Erro', translateAuthError(e.code));
+    }
   };
 
   return (
@@ -30,17 +53,15 @@ export default function LoginScreen({ navigation }: any) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Header com logo */}
       <View style={styles.header}>
         <Image
-          source={require('../../logo2color.png')}
+          source={require('../../assets/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
         <Text style={styles.logoSub}>Área do Membro</Text>
       </View>
 
-      {/* Formulário */}
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>E-MAIL</Text>
@@ -68,14 +89,20 @@ export default function LoginScreen({ navigation }: any) {
           />
         </View>
 
-        <TouchableOpacity style={styles.btnPrimary} onPress={handleLogin} activeOpacity={0.85}>
-          <Text style={styles.btnText}>Entrar</Text>
+        <TouchableOpacity
+          style={[styles.btnPrimary, loading && styles.btnDisabled]}
+          onPress={handleLogin}
+          activeOpacity={0.85}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnText}>Entrar</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.btnLink}
-          onPress={() => Alert.alert('Recuperação de senha', 'Em breve!')}
-        >
+        <TouchableOpacity style={styles.btnLink} onPress={handleForgotPassword}>
           <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
         </TouchableOpacity>
 
@@ -86,10 +113,7 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
   header: {
     backgroundColor: Colors.surface,
     paddingTop: 60,
@@ -99,11 +123,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  logo: {
-    width: 180,
-    height: 100,
-    marginBottom: 8,
-  },
+  logo: { width: 180, height: 100, marginBottom: 8 },
   logoSub: {
     fontSize: 11,
     color: Colors.textSecondary,
@@ -111,11 +131,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 4,
   },
-  form: {
-    flex: 1,
-    padding: 24,
-    gap: 16,
-  },
+  form: { flex: 1, padding: 24, gap: 16 },
   inputGroup: { gap: 6 },
   label: {
     fontSize: 11,
@@ -140,6 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.sm,
   },
+  btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   btnLink: { alignItems: 'center', paddingVertical: 8 },
   btnLinkText: { color: Colors.textSecondary, fontSize: 14 },

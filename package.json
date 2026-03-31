@@ -8,6 +8,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "firebase": "^10.12.0",
     "@expo-google-fonts/lora": "^0.2.3",
     "@expo-google-fonts/source-sans-3": "^0.2.3",
     "@react-navigation/bottom-tabs": "^6.5.20",

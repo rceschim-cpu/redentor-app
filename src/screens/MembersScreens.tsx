@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,25 +8,35 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
-import { mockMembers } from '../data/mock';
-import { MemberStatus } from '../types';
+import { Member, MemberStatus } from '../types';
+import { getMembers, getMember, addMember } from '../services/members';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'todos'>('todos');
 
-  const filtered = mockMembers.filter((m) => {
+  useEffect(() => {
+    getMembers()
+      .then(setMembers)
+      .catch(() => Alert.alert('Erro', 'Não foi possível carregar os membros.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = members.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === 'todos' || m.status === filter;
     return matchesSearch && matchesFilter;
   });
 
   const FILTERS: Array<{ key: MemberStatus | 'todos'; label: string }> = [
-    { key: 'todos', label: `Todos (${mockMembers.length})` },
+    { key: 'todos', label: `Todos (${members.length})` },
     { key: 'ativo', label: 'Ativos' },
     { key: 'visitante', label: 'Visitantes' },
     { key: 'inativo', label: 'Inativos' },
@@ -56,28 +66,38 @@ export function MembersListScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
       </View>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.memberRow}
-            activeOpacity={0.75}
-            onPress={() => navigation.navigate('MemberDetail', { memberId: item.id })}
-          >
-            <Avatar name={item.name} size={40} index={item.avatarIndex ?? index} />
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>{item.name}</Text>
-              <Text style={styles.memberSub}>
-                {item.groupId ? 'Em grupo' : 'Sem grupo'} · {item.neighborhood}
-              </Text>
-            </View>
-            <StatusBadge status={item.status} />
-          </TouchableOpacity>
-        )}
-      />
-      {/* FAB */}
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Nenhum membro encontrado.</Text>
+          }
+          renderItem={({ item, index }) => (
+            <TouchableOpacity
+              style={styles.memberRow}
+              activeOpacity={0.75}
+              onPress={() => navigation.navigate('MemberDetail', { memberId: item.id })}
+            >
+              <Avatar name={item.name} size={40} index={item.avatarIndex ?? index} />
+              <View style={styles.memberInfo}>
+                <Text style={styles.memberName}>{item.name}</Text>
+                <Text style={styles.memberSub}>
+                  {item.groupId ? 'Em grupo' : 'Sem grupo'} · {item.neighborhood ?? ''}
+                </Text>
+              </View>
+              <StatusBadge status={item.status} />
+            </TouchableOpacity>
+          )}
+        />
+      )}
+
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddMember')}>
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
@@ -86,11 +106,17 @@ export function MembersListScreen({ navigation }: any) {
 }
 
 // ─── Detalhe do Membro ────────────────────────────────────────────────────
-export function MemberDetailScreen({ route, navigation }: any) {
+export function MemberDetailScreen({ route }: any) {
   const { memberId } = route.params;
-  const member = mockMembers.find((m) => m.id === memberId);
+  const [member, setMember] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!member) return null;
+  useEffect(() => {
+    getMember(memberId)
+      .then(setMember)
+      .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
+      .finally(() => setLoading(false));
+  }, [memberId]);
 
   const MARITAL_MAP: Record<string, string> = {
     solteiro: 'Solteiro(a)',
@@ -98,6 +124,22 @@ export function MemberDetailScreen({ route, navigation }: any) {
     divorciado: 'Divorciado(a)',
     viuvo: 'Viúvo(a)',
   };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!member) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.empty}>Membro não encontrado.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -122,15 +164,16 @@ export function MemberDetailScreen({ route, navigation }: any) {
         </Card>
         <Card style={{ marginBottom: 10 }}>
           <Text style={styles.cardTitle}>VIDA NA COMUNIDADE</Text>
-          <DetailRow label="Pequeno Grupo" value={member.groupId ? 'Célula Norte' : 'Sem grupo'} accent />
           <DetailRow label="Batismo" value={member.baptismDate} />
           <DetailRow label="Membro desde" value={member.memberSince} />
         </Card>
-        <Card style={{ marginBottom: 16 }}>
-          <Text style={styles.cardTitle}>ENDEREÇO</Text>
-          <DetailRow label="Bairro" value={member.neighborhood} />
-          <DetailRow label="Cidade" value={member.city} />
-        </Card>
+        {(member.neighborhood || member.city) && (
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={styles.cardTitle}>ENDEREÇO</Text>
+            <DetailRow label="Bairro" value={member.neighborhood} />
+            <DetailRow label="Cidade" value={member.city} />
+          </Card>
+        )}
         <PrimaryButton
           label="Entrar em Contato"
           onPress={() => Alert.alert('Contato', `Ligar para ${member.phone}`)}
@@ -146,16 +189,29 @@ export function AddMemberScreen({ navigation }: any) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Nome obrigatório');
       return;
     }
-    // TODO: salvar no backend
-    Alert.alert('Sucesso', 'Membro cadastrado!', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    setSaving(true);
+    try {
+      await addMember({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        status: 'visitante',
+      });
+      Alert.alert('Sucesso', 'Membro cadastrado!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível salvar o membro. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -178,7 +234,7 @@ export function AddMemberScreen({ navigation }: any) {
           />
         </View>
       ))}
-      <PrimaryButton label="Salvar Membro" onPress={handleSave} />
+      <PrimaryButton label={saving ? 'Salvando...' : 'Salvar Membro'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12, alignItems: 'center' }}>
         <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>Cancelar</Text>
       </TouchableOpacity>
@@ -189,6 +245,8 @@ export function AddMemberScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { textAlign: 'center', color: Colors.textMuted, marginTop: 40, fontSize: 14 },
   searchBar: { padding: Spacing.md, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border },
   searchInput: { backgroundColor: Colors.background, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 10, fontSize: 14, color: Colors.textPrimary },
   filterRow: { flexDirection: 'row', gap: 6, padding: Spacing.md, flexWrap: 'wrap' },
