@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import AddGroupScreen from '../screens/AddGroupScreen';
+import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
   MembersListScreen,
   MemberDetailScreen,
@@ -19,35 +21,58 @@ const Tab = createBottomTabNavigator();
 const MembersStack = createNativeStackNavigator();
 const GroupsStack = createNativeStackNavigator();
 
+const headerStyle = {
+  headerStyle: { backgroundColor: Colors.primary },
+  headerTintColor: '#fff' as const,
+  headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
+  headerBackTitle: '',
+};
+
 function MembersNavigator() {
   return (
-    <MembersStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
-        headerBackTitle: '',
-      }}
-    >
-      <MembersStack.Screen name="MembersList" component={MembersListScreen} options={{ title: 'Membros' }} />
-      <MembersStack.Screen name="MemberDetail" component={MemberDetailScreen} options={{ title: 'Perfil do Membro' }} />
-      <MembersStack.Screen name="AddMember" component={AddMemberScreen} options={{ title: 'Novo Membro' }} />
+    <MembersStack.Navigator screenOptions={headerStyle}>
+      <MembersStack.Screen
+        name="MembersList"
+        component={MembersListScreen}
+        options={{ title: 'Membros' }}
+      />
+      <MembersStack.Screen
+        name="MemberDetail"
+        component={MemberDetailScreen}
+        options={{ title: 'Perfil do Membro' }}
+      />
+      <MembersStack.Screen
+        name="AddMember"
+        component={AddMemberScreen}
+        options={{ title: 'Novo Membro' }}
+      />
     </MembersStack.Navigator>
   );
 }
 
 function GroupsNavigator() {
   return (
-    <GroupsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
-        headerBackTitle: '',
-      }}
-    >
-      <GroupsStack.Screen name="GroupsList" component={GroupsListScreen} options={{ title: 'Pequenos Grupos' }} />
-      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Detalhes do Grupo' }} />
+    <GroupsStack.Navigator screenOptions={headerStyle}>
+      <GroupsStack.Screen
+        name="GroupsList"
+        component={GroupsListScreen}
+        options={{ title: 'Pequenos Grupos' }}
+      />
+      <GroupsStack.Screen
+        name="GroupDetail"
+        component={GroupDetailScreen}
+        options={{ title: 'Detalhes do Grupo' }}
+      />
+      <GroupsStack.Screen
+        name="AddGroup"
+        component={AddGroupScreen}
+        options={{ title: 'Novo Grupo' }}
+      />
+      <GroupsStack.Screen
+        name="GroupMemberRequests"
+        component={GroupMemberRequestsScreen}
+        options={{ title: 'Solicitações' }}
+      />
     </GroupsStack.Navigator>
   );
 }
@@ -56,8 +81,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
     Dashboard: '⌂',
     Members: '●●',
-    Groups: '▲',
-    Profile: '◎',
+    SmallGroups: '▲',
   };
   return (
     <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4, color: Colors.primary }}>
@@ -89,9 +113,21 @@ function MainTabs() {
         tabBarInactiveTintColor: Colors.textMuted,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Início', headerShown: false }} />
-      <Tab.Screen name="Members" component={MembersNavigator} options={{ title: 'Membros' }} />
-      <Tab.Screen name="Groups" component={GroupsNavigator} options={{ title: 'Grupos' }} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ title: 'Início', headerShown: false }}
+      />
+      <Tab.Screen
+        name="Members"
+        component={MembersNavigator}
+        options={{ title: 'Membros' }}
+      />
+      <Tab.Screen
+        name="SmallGroups"
+        component={GroupsNavigator}
+        options={{ title: 'Pequenos Grupos' }}
+      />
     </Tab.Navigator>
   );
 }

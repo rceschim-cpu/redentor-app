@@ -167,11 +167,12 @@ export function MemberDetailScreen({ route }: any) {
           <DetailRow label="Batismo" value={member.baptismDate} />
           <DetailRow label="Membro desde" value={member.memberSince} />
         </Card>
-        {(member.neighborhood || member.city) && (
+        {(member.street || member.neighborhood || member.city) && (
           <Card style={{ marginBottom: 16 }}>
             <Text style={styles.cardTitle}>ENDEREÇO</Text>
-            <DetailRow label="Bairro" value={member.neighborhood} />
-            <DetailRow label="Cidade" value={member.city} />
+            {member.street && <DetailRow label="Rua" value={member.street} />}
+            {member.neighborhood && <DetailRow label="Bairro" value={member.neighborhood} />}
+            {member.city && <DetailRow label="Cidade" value={member.city} />}
           </Card>
         )}
         <PrimaryButton
@@ -189,6 +190,9 @@ export function AddMemberScreen({ navigation }: any) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [street, setStreet] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('Curitiba');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -202,8 +206,11 @@ export function AddMemberScreen({ navigation }: any) {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
+        street: street.trim(),
+        neighborhood: neighborhood.trim(),
+        city: city.trim(),
         status: 'visitante',
-      });
+      } as any);
       Alert.alert('Sucesso', 'Membro cadastrado!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
@@ -214,13 +221,21 @@ export function AddMemberScreen({ navigation }: any) {
     }
   };
 
+  const fields = [
+    { label: 'NOME COMPLETO', value: name, setter: setName, placeholder: 'Nome do membro' },
+    { label: 'TELEFONE / WHATSAPP', value: phone, setter: setPhone, placeholder: '(41) 9xxxx-xxxx', type: 'phone-pad' },
+    { label: 'E-MAIL', value: email, setter: setEmail, placeholder: 'email@exemplo.com', type: 'email-address' },
+  ];
+
+  const addressFields = [
+    { label: 'RUA / LOGRADOURO', value: street, setter: setStreet, placeholder: 'Rua das Flores, 123' },
+    { label: 'BAIRRO', value: neighborhood, setter: setNeighborhood, placeholder: 'Ex: Boa Vista' },
+    { label: 'CIDADE', value: city, setter: setCity, placeholder: 'Curitiba' },
+  ];
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.formContent}>
-      {[
-        { label: 'NOME COMPLETO', value: name, setter: setName, placeholder: 'Nome do membro' },
-        { label: 'TELEFONE / WHATSAPP', value: phone, setter: setPhone, placeholder: '(41) 9xxxx-xxxx', type: 'phone-pad' },
-        { label: 'E-MAIL', value: email, setter: setEmail, placeholder: 'email@exemplo.com', type: 'email-address' },
-      ].map((field) => (
+      {fields.map((field) => (
         <View key={field.label} style={styles.formGroup}>
           <Text style={styles.formLabel}>{field.label}</Text>
           <TextInput
@@ -234,6 +249,23 @@ export function AddMemberScreen({ navigation }: any) {
           />
         </View>
       ))}
+
+      <Text style={styles.sectionDivider}>ENDEREÇO</Text>
+
+      {addressFields.map((field) => (
+        <View key={field.label} style={styles.formGroup}>
+          <Text style={styles.formLabel}>{field.label}</Text>
+          <TextInput
+            style={styles.formInput}
+            value={field.value}
+            onChangeText={field.setter}
+            placeholder={field.placeholder}
+            placeholderTextColor={Colors.textMuted}
+            autoCapitalize="words"
+          />
+        </View>
+      ))}
+
       <PrimaryButton label={saving ? 'Salvando...' : 'Salvar Membro'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12, alignItems: 'center' }}>
         <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>Cancelar</Text>
@@ -270,4 +302,5 @@ const styles = StyleSheet.create({
   formGroup: { gap: 6 },
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
+  sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
 });
