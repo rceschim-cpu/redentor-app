@@ -51,11 +51,13 @@ export default function DashboardScreen({ navigation }: any) {
       <View style={styles.hero}>
         <ArchBar />
         <View style={styles.heroRow}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.heroLogo}
-            resizeMode="contain"
-          />
+          <View style={styles.heroLogoWrap}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+          </View>
           <TouchableOpacity onPress={handleSignOut}>
             <Avatar name={displayName} size={38} index={1} />
           </TouchableOpacity>
@@ -119,7 +121,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  heroLogo: { width: 140, height: 52 },
+  heroLogoWrap: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  heroLogo: { width: 130, height: 46 },
   greeting: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 2 },
   name: { fontSize: 22, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
   body: { flex: 1, paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },

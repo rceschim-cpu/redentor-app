@@ -7,12 +7,12 @@ export const Colors = {
   border: '#EDE9E3',
   borderLight: '#F5F1EC',
 
-  // Arco do logo (vitral)
-  archPurple: '#9B59B6',
-  archBlue: '#4A90C4',
-  archGreen: '#5BA56A',
-  archOrange: '#E07B3A',
-  archRed: '#C0392B',
+  // Arco do vitral — cores extraídas da logo
+  archPurple: '#7B5B9E',
+  archBlue:   '#4A7FBE',
+  archGreen:  '#7BAA6A',
+  archTan:    '#C8B068',
+  archSalmon: '#C87868',
 
   // Texto
   textPrimary: '#3E3530',
