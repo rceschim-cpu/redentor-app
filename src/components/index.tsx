@@ -52,7 +52,7 @@ export const StatusBadge = ({ status }: BadgeProps) => {
 // ─── ArchBar (decoração do logo) ────────────────────────────────────────────
 export const ArchBar = ({ height = 4 }: { height?: number }) => (
   <View style={[styles.archBar, { height }]}>
-    {[Colors.archPurple, Colors.archBlue, Colors.archGreen, Colors.archTan, Colors.archSalmon].map(
+    {[Colors.archRose, Colors.archBlue, Colors.archYellow, Colors.archGreen].map(
       (color, i) => (
         <View key={i} style={[styles.archSegment, { backgroundColor: color }]} />
       )
