@@ -14,7 +14,8 @@ export interface AppUserProfile {
   name: string;
   email: string;
   role: UserRole;
-  memberId?: string;  // referência ao doc na coleção members
+  memberId?: string;         // referência ao doc na coleção members
+  profileComplete?: boolean; // true após completar cadastro no primeiro acesso
   createdAt?: string;
 }
 

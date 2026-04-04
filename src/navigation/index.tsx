@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import CelebrationScreen from '../screens/CelebrationScreen';
+import CompleteProfileScreen from '../screens/CompleteProfileScreen';
+import UsersScreen from '../screens/UsersScreen';
 import AddGroupScreen from '../screens/AddGroupScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
@@ -19,6 +21,7 @@ import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const DashboardStack = createNativeStackNavigator();
 const MembersStack = createNativeStackNavigator();
 const GroupsStack = createNativeStackNavigator();
 
@@ -28,6 +31,23 @@ const headerStyle = {
   headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
+
+function DashboardNavigator() {
+  return (
+    <DashboardStack.Navigator screenOptions={headerStyle}>
+      <DashboardStack.Screen
+        name="DashboardMain"
+        component={DashboardScreen}
+        options={{ headerShown: false }}
+      />
+      <DashboardStack.Screen
+        name="Users"
+        component={UsersScreen}
+        options={{ title: 'Usuários' }}
+      />
+    </DashboardStack.Navigator>
+  );
+}
 
 function MembersNavigator() {
   return (
@@ -117,7 +137,7 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={DashboardScreen}
+        component={DashboardNavigator}
         options={{ title: 'Início', headerShown: false }}
       />
       <Tab.Screen
@@ -144,7 +164,7 @@ function MainTabs() {
 }
 
 export default function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, appUser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -156,10 +176,12 @@ export default function RootNavigator() {
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
-        <RootStack.Screen name="Main" component={MainTabs} />
-      ) : (
+      {!user ? (
         <RootStack.Screen name="Login" component={LoginScreen} />
+      ) : !appUser?.profileComplete ? (
+        <RootStack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
+      ) : (
+        <RootStack.Screen name="Main" component={MainTabs} />
       )}
     </RootStack.Navigator>
   );

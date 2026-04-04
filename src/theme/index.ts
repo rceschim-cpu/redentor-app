@@ -5,7 +5,7 @@ export const Colors = {
   background: '#B8B5B0',    // Cinza-concreto (parede da igreja)
   surface: '#FFFFFF',
   border: '#D0CEC9',
-  borderLight: '#E0DEDА',
+  borderLight: '#E0DEDA',
 
   // Arco do vitral — 4 segmentos, extraídos do logo oficial
   archRose:   '#C07888',  // arco externo — rosa/malva

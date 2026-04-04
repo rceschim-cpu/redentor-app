@@ -63,7 +63,8 @@ const MODULES = [
 ];
 
 export default function DashboardScreen({ navigation }: any) {
-  const { user } = useAuth();
+  const { user, appUser } = useAuth();
+  const isAdmin = appUser?.role === 'administrador';
   const [memberCount, setMemberCount] = useState('—');
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
@@ -97,9 +98,19 @@ export default function DashboardScreen({ navigation }: any) {
               resizeMode="contain"
             />
           </View>
-          <TouchableOpacity onPress={handleSignOut}>
-            <Avatar name={displayName} size={38} index={1} />
-          </TouchableOpacity>
+          <View style={styles.heroActions}>
+            {isAdmin && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Users')}
+                style={styles.adminBtn}
+              >
+                <Text style={styles.adminBtnIcon}>⚙</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleSignOut}>
+              <Avatar name={displayName} size={38} index={1} />
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.greeting}>Bem-vindo de volta</Text>
         <Text style={styles.name}>{displayName}</Text>
@@ -242,6 +253,16 @@ const styles = StyleSheet.create({
   moduleEmoji: { fontSize: 16 },
   moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   moduleSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  heroActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  adminBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminBtnIcon: { fontSize: 18, color: Colors.textPrimary },
   bannerScroll: { marginTop: Spacing.lg, marginBottom: 0 },
   bannerSlide: {
     borderRadius: Radius.lg,

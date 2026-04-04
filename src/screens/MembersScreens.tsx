@@ -16,13 +16,16 @@ import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
 import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember } from '../services/members';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
+  const { appUser } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'todos'>('todos');
+  const canAddMember = appUser?.role === 'administrador' || appUser?.role === 'pastor';
 
   useEffect(() => {
     getMembers()
@@ -100,9 +103,11 @@ export function MembersListScreen({ navigation }: any) {
         />
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddMember')}>
-        <Text style={styles.fabText}>＋</Text>
-      </TouchableOpacity>
+      {canAddMember && (
+        <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddMember')}>
+          <Text style={styles.fabText}>＋</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -310,7 +315,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.border,
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
