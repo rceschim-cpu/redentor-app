@@ -10,7 +10,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
@@ -119,13 +118,15 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const { appUser } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
-  const statusBarHeight = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight ?? 24);
   const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const canDelete = appUser?.role === 'administrador';
 
   useEffect(() => {
     getMember(memberId)
-      .then(setMember)
+      .then((m) => {
+        setMember(m);
+        if (m) navigation.setOptions({ title: m.name });
+      })
       .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
       .finally(() => setLoading(false));
   }, [memberId]);
@@ -135,6 +136,27 @@ export function MemberDetailScreen({ route, navigation }: any) {
     casado: 'Casado(a)',
     divorciado: 'Divorciado(a)',
     viuvo: 'Viúvo(a)',
+  };
+
+  const handleDelete = () => {
+    const doDelete = async () => {
+      try {
+        await deleteMember(member!.id);
+        navigation.goBack();
+      } catch {
+        Alert.alert('Erro', 'Não foi possível excluir o membro.');
+      }
+    };
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      if (window.confirm(`Excluir "${member!.name}"? Esta ação não pode ser desfeita.`)) doDelete();
+    } else {
+      Alert.alert(
+        'Excluir membro',
+        `Tem certeza que deseja excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
+        [{ text: 'Cancelar', style: 'cancel' }, { text: 'Excluir', style: 'destructive', onPress: doDelete }]
+      );
+    }
   };
 
   if (loading) {
@@ -155,14 +177,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.memberHero, { paddingTop: statusBarHeight + 16 }]}>
-        <TouchableOpacity
-          style={[styles.backBtn, { top: statusBarHeight + 10 }]}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backBtnIcon}>‹</Text>
-        </TouchableOpacity>
+      <View style={styles.memberHero}>
         <Avatar name={member.name} size={72} index={member.avatarIndex} />
         <Text style={styles.heroName}>{member.name}</Text>
         <Text style={styles.heroRole}>
@@ -209,27 +224,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
         {canDelete && (
           <TouchableOpacity
             style={styles.btnDelete}
-            onPress={() =>
-              Alert.alert(
-                'Excluir membro',
-                `Tem certeza que deseja excluir "${member.name}"? Esta ação não pode ser desfeita.`,
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  {
-                    text: 'Excluir',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        await deleteMember(member.id);
-                        navigation.goBack();
-                      } catch {
-                        Alert.alert('Erro', 'Não foi possível excluir o membro.');
-                      }
-                    },
-                  },
-                ]
-              )
-            }
+            onPress={handleDelete}
           >
             <Text style={styles.btnDeleteText}>Excluir membro</Text>
           </TouchableOpacity>
@@ -355,19 +350,6 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 20, right: 20, width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   fabText: { color: '#fff', fontSize: 24, lineHeight: 28 },
   memberHero: { backgroundColor: Colors.headerBg, padding: Spacing.xl, alignItems: 'center' },
-  backBtn: {
-    position: 'absolute',
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnIcon: { fontSize: 26, color: Colors.textPrimary, lineHeight: 30, marginTop: -2 },
   heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, marginTop: 10, fontFamily: 'Lora_600SemiBold' },
   heroRole: { fontSize: 11, color: Colors.textSecondary, marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
   detailBody: { flex: 1, padding: Spacing.md },
@@ -377,8 +359,8 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
-  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary, alignItems: 'center' },
-  btnEditText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#C0392B', alignItems: 'center' },
-  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#C0392B' },
+  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.primary, alignItems: 'center' },
+  btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
+  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });
