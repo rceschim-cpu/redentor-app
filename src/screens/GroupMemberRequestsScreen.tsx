@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
@@ -29,35 +30,45 @@ export default function GroupMemberRequestsScreen({ route, navigation }: any) {
       .finally(() => setLoading(false));
   }, [groupId]);
 
-  const handleRespond = async (
+  const handleRespond = (
     membershipId: string,
     status: 'aprovado' | 'rejeitado',
     name: string
   ) => {
     if (!user) return;
     const label = status === 'aprovado' ? 'Aprovar' : 'Rejeitar';
-    Alert.alert(
-      `${label} solicitação`,
-      `${status === 'aprovado' ? 'Aprovar' : 'Rejeitar'} o ingresso de ${name}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: label,
-          style: status === 'aprovado' ? 'default' : 'destructive',
-          onPress: async () => {
-            setProcessing(membershipId);
-            try {
-              await respondToRequest(groupId, membershipId, status, user.uid);
-              setRequests((prev) => prev.filter((r) => r.id !== membershipId));
-            } catch {
-              Alert.alert('Erro', 'Não foi possível processar a solicitação.');
-            } finally {
-              setProcessing(null);
-            }
-          },
-        },
-      ]
-    );
+
+    const doRespond = async () => {
+      setProcessing(membershipId);
+      try {
+        await respondToRequest(groupId, membershipId, status, user.uid);
+        setRequests((prev) => prev.filter((r) => r.id !== membershipId));
+      } catch (err: any) {
+        const msg = err?.message ?? 'Não foi possível processar a solicitação.';
+        if (Platform.OS === 'web') {
+          // @ts-ignore
+          window.alert(`Erro: ${msg}`);
+        } else {
+          Alert.alert('Erro', msg);
+        }
+      } finally {
+        setProcessing(null);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      if (window.confirm(`${label} o ingresso de ${name}?`)) doRespond();
+    } else {
+      Alert.alert(
+        `${label} solicitação`,
+        `${label} o ingresso de ${name}?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: label, style: status === 'aprovado' ? 'default' : 'destructive', onPress: doRespond },
+        ]
+      );
+    }
   };
 
   if (loading) {
