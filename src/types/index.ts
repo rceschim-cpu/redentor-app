@@ -38,6 +38,8 @@ export interface Member {
   neighborhood?: string;
   city?: string;
   avatarIndex?: number;
+  cars?: Array<{ plate: string; model?: string; color?: string }>;
+  carPlates?: string[];
 }
 
 // ─── Pequenos Grupos ───────────────────────────────────────────────────────────
@@ -56,6 +58,7 @@ export interface Group {
   location?: string;
   neighborhood?: string;
   status: 'ativo' | 'em_formacao' | 'inativo';
+  recurrence?: 'semanal' | 'quinzenal' | 'mensal';
   createdAt?: string;
   createdBy?: string;
 }

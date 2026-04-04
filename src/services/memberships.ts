@@ -1,6 +1,7 @@
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   doc,
@@ -77,7 +78,8 @@ export async function respondToRequest(
   groupId: string,
   membershipId: string,
   status: 'aprovado' | 'rejeitado',
-  resolvedBy: string
+  resolvedBy: string,
+  memberUserId?: string
 ): Promise<void> {
   const batch = writeBatch(db);
   const membershipRef = doc(db, MEMBERSHIPS(groupId), membershipId);
@@ -99,6 +101,21 @@ export async function respondToRequest(
   }
 
   await batch.commit();
+
+  // Se aprovado, atualiza groupId no documento do membro
+  if (status === 'aprovado' && memberUserId) {
+    try {
+      const userSnap = await getDoc(doc(db, 'users', memberUserId));
+      if (userSnap.exists()) {
+        const memberId = userSnap.data().memberId as string | undefined;
+        if (memberId) {
+          await updateDoc(doc(db, 'members', memberId), { groupId });
+        }
+      }
+    } catch {
+      // Não-crítico: não falha a operação principal
+    }
+  }
 }
 
 export async function removeMember(

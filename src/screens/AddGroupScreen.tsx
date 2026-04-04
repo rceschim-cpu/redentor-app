@@ -21,6 +21,11 @@ const STATUS_OPTIONS: Array<{ key: 'ativo' | 'em_formacao'; label: string }> = [
   { key: 'ativo', label: 'Ativo' },
   { key: 'em_formacao', label: 'Em formação' },
 ];
+const RECURRENCE_OPTIONS: Array<{ key: 'semanal' | 'quinzenal' | 'mensal'; label: string }> = [
+  { key: 'semanal', label: 'Semanal' },
+  { key: 'quinzenal', label: 'Quinzenal' },
+  { key: 'mensal', label: 'Mensal' },
+];
 
 export default function AddGroupScreen({ navigation, route }: any) {
   const editing: Group | undefined = route.params?.group;
@@ -32,9 +37,11 @@ export default function AddGroupScreen({ navigation, route }: any) {
   const [location, setLocation] = useState(editing?.location ?? '');
   const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
   const [status, setStatus] = useState<'ativo' | 'em_formacao'>(editing?.status ?? 'ativo');
+  const [recurrence, setRecurrence] = useState<'semanal' | 'quinzenal' | 'mensal' | ''>(editing?.recurrence ?? '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (saving) return;
     if (!name.trim()) {
       Alert.alert('Nome obrigatório', 'Informe o nome do pequeno grupo.');
       return;
@@ -51,21 +58,17 @@ export default function AddGroupScreen({ navigation, route }: any) {
         location: location.trim(),
         neighborhood: neighborhood.trim(),
         status,
+        ...(recurrence ? { recurrence } : {}),
       };
       if (editing) {
         await updateGroup(editing.id, data);
-        Alert.alert('Salvo!', 'Grupo atualizado com sucesso.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
       } else {
         await createGroup(
           { ...data, leaderId: user.uid, leaderName: appUser.name },
           user.uid
         );
-        Alert.alert('Grupo criado!', `"${name}" foi cadastrado com sucesso.`, [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
       }
+      navigation.goBack();
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar o grupo. Tente novamente.');
     } finally {
@@ -169,6 +172,24 @@ export default function AddGroupScreen({ navigation, route }: any) {
               onPress={() => setStatus(opt.key)}
             >
               <Text style={[styles.statusText, status === opt.key && styles.statusTextActive]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Recorrência */}
+      <View style={styles.field}>
+        <Text style={styles.label}>RECORRÊNCIA</Text>
+        <View style={styles.statusRow}>
+          {RECURRENCE_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[styles.statusChip, recurrence === opt.key && styles.statusChipActive]}
+              onPress={() => setRecurrence(recurrence === opt.key ? '' : opt.key)}
+            >
+              <Text style={[styles.statusText, recurrence === opt.key && styles.statusTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>

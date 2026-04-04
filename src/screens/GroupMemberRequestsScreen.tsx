@@ -33,7 +33,8 @@ export default function GroupMemberRequestsScreen({ route, navigation }: any) {
   const handleRespond = (
     membershipId: string,
     status: 'aprovado' | 'rejeitado',
-    name: string
+    name: string,
+    userId: string
   ) => {
     if (!user) return;
     const label = status === 'aprovado' ? 'Aprovar' : 'Rejeitar';
@@ -41,7 +42,7 @@ export default function GroupMemberRequestsScreen({ route, navigation }: any) {
     const doRespond = async () => {
       setProcessing(membershipId);
       try {
-        await respondToRequest(groupId, membershipId, status, user.uid);
+        await respondToRequest(groupId, membershipId, status, user.uid, userId);
         setRequests((prev) => prev.filter((r) => r.id !== membershipId));
       } catch (err: any) {
         const msg = err?.message ?? 'Não foi possível processar a solicitação.';
@@ -106,14 +107,14 @@ export default function GroupMemberRequestsScreen({ route, navigation }: any) {
             <View style={styles.actions}>
               <TouchableOpacity
                 style={styles.btnReject}
-                onPress={() => handleRespond(item.id, 'rejeitado', item.userName)}
+                onPress={() => handleRespond(item.id, 'rejeitado', item.userName, item.userId)}
                 disabled={processing === item.id}
               >
                 <Text style={styles.btnRejectText}>Recusar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.btnApprove}
-                onPress={() => handleRespond(item.id, 'aprovado', item.userName)}
+                onPress={() => handleRespond(item.id, 'aprovado', item.userName, item.userId)}
                 disabled={processing === item.id}
               >
                 {processing === item.id ? (
