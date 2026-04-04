@@ -14,6 +14,7 @@ import { ArchBar, PrimaryButton } from '../components';
 import { addMember } from '../services/members';
 import { updateUserProfile } from '../services/userProfile';
 import { useAuth } from '../context/AuthContext';
+import { maskPhone, maskDate } from '../utils/masks';
 
 export default function CompleteProfileScreen() {
   const { user, appUser, refreshAppUser } = useAuth();
@@ -103,7 +104,7 @@ export default function CompleteProfileScreen() {
           <TextInput
             style={styles.input}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(v) => setPhone(maskPhone(v))}
             placeholder="(41) 99999-9999"
             placeholderTextColor={Colors.textMuted}
             keyboardType="phone-pad"
@@ -115,7 +116,7 @@ export default function CompleteProfileScreen() {
           <TextInput
             style={styles.input}
             value={birthDate}
-            onChangeText={setBirthDate}
+            onChangeText={(v) => setBirthDate(maskDate(v))}
             placeholder="DD/MM/AAAA"
             placeholderTextColor={Colors.textMuted}
             keyboardType="numeric"

@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { PrimaryButton } from '../components';
-import { createGroup } from '../services/groups';
+import { createGroup, updateGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
+import { Group } from '../types';
 
 const ICONS = ['🏠', '❤️', '⚡', '💍', '🌿', '📖', '🕊️', '🙏', '🌟', '👨‍👩‍👧'];
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -21,15 +22,16 @@ const STATUS_OPTIONS: Array<{ key: 'ativo' | 'em_formacao'; label: string }> = [
   { key: 'em_formacao', label: 'Em formação' },
 ];
 
-export default function AddGroupScreen({ navigation }: any) {
+export default function AddGroupScreen({ navigation, route }: any) {
+  const editing: Group | undefined = route.params?.group;
   const { user, appUser } = useAuth();
-  const [name, setName] = useState('');
-  const [icon, setIcon] = useState('🏠');
-  const [meetingDay, setMeetingDay] = useState('');
-  const [meetingTime, setMeetingTime] = useState('');
-  const [location, setLocation] = useState('');
-  const [neighborhood, setNeighborhood] = useState('');
-  const [status, setStatus] = useState<'ativo' | 'em_formacao'>('ativo');
+  const [name, setName] = useState(editing?.name ?? '');
+  const [icon, setIcon] = useState(editing?.icon ?? '🏠');
+  const [meetingDay, setMeetingDay] = useState(editing?.meetingDay ?? '');
+  const [meetingTime, setMeetingTime] = useState(editing?.meetingTime ?? '');
+  const [location, setLocation] = useState(editing?.location ?? '');
+  const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
+  const [status, setStatus] = useState<'ativo' | 'em_formacao'>(editing?.status ?? 'ativo');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -41,25 +43,31 @@ export default function AddGroupScreen({ navigation }: any) {
 
     setSaving(true);
     try {
-      await createGroup(
-        {
-          name: name.trim(),
-          icon,
-          leaderId: user.uid,
-          leaderName: appUser.name,
-          meetingDay,
-          meetingTime,
-          location: location.trim(),
-          neighborhood: neighborhood.trim(),
-          status,
-        },
-        user.uid
-      );
-      Alert.alert('Grupo criado!', `"${name}" foi cadastrado com sucesso.`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      const data = {
+        name: name.trim(),
+        icon,
+        meetingDay,
+        meetingTime,
+        location: location.trim(),
+        neighborhood: neighborhood.trim(),
+        status,
+      };
+      if (editing) {
+        await updateGroup(editing.id, data);
+        Alert.alert('Salvo!', 'Grupo atualizado com sucesso.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } else {
+        await createGroup(
+          { ...data, leaderId: user.uid, leaderName: appUser.name },
+          user.uid
+        );
+        Alert.alert('Grupo criado!', `"${name}" foi cadastrado com sucesso.`, [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch {
-      Alert.alert('Erro', 'Não foi possível criar o grupo. Tente novamente.');
+      Alert.alert('Erro', 'Não foi possível salvar o grupo. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -168,7 +176,7 @@ export default function AddGroupScreen({ navigation }: any) {
         </View>
       </View>
 
-      <PrimaryButton label={saving ? 'Salvando...' : 'Criar Grupo'} onPress={handleSave} />
+      <PrimaryButton label={saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar Grupo'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
         <Text style={styles.cancelText}>Cancelar</Text>
       </TouchableOpacity>

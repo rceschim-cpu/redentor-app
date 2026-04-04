@@ -7,7 +7,6 @@ import {
   query,
   where,
   writeBatch,
-  orderBy,
   limit,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -18,21 +17,23 @@ const MEMBERSHIPS = (groupId: string) => `groups/${groupId}/memberships`;
 export async function getMemberships(groupId: string): Promise<GroupMembership[]> {
   const q = query(
     collection(db, MEMBERSHIPS(groupId)),
-    where('status', '==', 'aprovado'),
-    orderBy('userName')
+    where('status', '==', 'aprovado')
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as GroupMembership));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as GroupMembership))
+    .sort((a, b) => a.userName.localeCompare(b.userName));
 }
 
 export async function getPendingRequests(groupId: string): Promise<GroupMembership[]> {
   const q = query(
     collection(db, MEMBERSHIPS(groupId)),
-    where('status', '==', 'pendente'),
-    orderBy('requestedAt')
+    where('status', '==', 'pendente')
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as GroupMembership));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as GroupMembership))
+    .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
 }
 
 export async function getUserMembership(

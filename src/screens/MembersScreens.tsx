@@ -15,8 +15,9 @@ import {
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
 import { Member, MemberStatus } from '../types';
-import { getMembers, getMember, addMember } from '../services/members';
+import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { useAuth } from '../context/AuthContext';
+import { maskPhone, maskDate } from '../utils/masks';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
@@ -115,9 +116,12 @@ export function MembersListScreen({ navigation }: any) {
 // ─── Detalhe do Membro ────────────────────────────────────────────────────
 export function MemberDetailScreen({ route, navigation }: any) {
   const { memberId } = route.params;
+  const { appUser } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const statusBarHeight = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight ?? 24);
+  const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
+  const canDelete = appUser?.role === 'administrador';
 
   useEffect(() => {
     getMember(memberId)
@@ -194,94 +198,136 @@ export function MemberDetailScreen({ route, navigation }: any) {
           label="Entrar em Contato"
           onPress={() => Alert.alert('Contato', `Ligar para ${member.phone}`)}
         />
+        {canEdit && (
+          <TouchableOpacity
+            style={styles.btnEdit}
+            onPress={() => navigation.navigate('AddMember', { member })}
+          >
+            <Text style={styles.btnEditText}>Editar membro</Text>
+          </TouchableOpacity>
+        )}
+        {canDelete && (
+          <TouchableOpacity
+            style={styles.btnDelete}
+            onPress={() =>
+              Alert.alert(
+                'Excluir membro',
+                `Tem certeza que deseja excluir "${member.name}"? Esta ação não pode ser desfeita.`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await deleteMember(member.id);
+                        navigation.goBack();
+                      } catch {
+                        Alert.alert('Erro', 'Não foi possível excluir o membro.');
+                      }
+                    },
+                  },
+                ]
+              )
+            }
+          >
+            <Text style={styles.btnDeleteText}>Excluir membro</Text>
+          </TouchableOpacity>
+        )}
         <View style={{ height: 30 }} />
       </ScrollView>
     </View>
   );
 }
 
-// ─── Cadastro de Membro ───────────────────────────────────────────────────
-export function AddMemberScreen({ navigation }: any) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [street, setStreet] = useState('');
-  const [neighborhood, setNeighborhood] = useState('');
-  const [city, setCity] = useState('Curitiba');
+// ─── Cadastro / Edição de Membro ─────────────────────────────────────────────
+export function AddMemberScreen({ navigation, route }: any) {
+  const editing: Member | undefined = route.params?.member;
+  const [name, setName] = useState(editing?.name ?? '');
+  const [phone, setPhone] = useState(editing?.phone ?? '');
+  const [birthDate, setBirthDate] = useState(editing?.birthDate ?? '');
+  const [email, setEmail] = useState(editing?.email ?? '');
+  const [street, setStreet] = useState(editing?.street ?? '');
+  const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
+  const [city, setCity] = useState(editing?.city ?? 'Curitiba');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert('Nome obrigatório');
-      return;
-    }
+    if (!name.trim()) { Alert.alert('Nome obrigatório'); return; }
     setSaving(true);
     try {
-      await addMember({
+      const data = {
         name: name.trim(),
         phone: phone.trim(),
+        birthDate: birthDate.trim(),
         email: email.trim(),
         street: street.trim(),
         neighborhood: neighborhood.trim(),
         city: city.trim(),
-        status: 'visitante',
-      } as any);
-      Alert.alert('Sucesso', 'Membro cadastrado!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      };
+      if (editing) {
+        await updateMember(editing.id, data);
+        Alert.alert('Salvo!', 'Dados do membro atualizados.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } else {
+        await addMember({ ...data, status: 'visitante' } as any);
+        Alert.alert('Cadastrado!', 'Membro adicionado com sucesso.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch {
-      Alert.alert('Erro', 'Não foi possível salvar o membro. Tente novamente.');
+      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
     } finally {
       setSaving(false);
     }
   };
 
-  const fields = [
-    { label: 'NOME COMPLETO', value: name, setter: setName, placeholder: 'Nome do membro' },
-    { label: 'TELEFONE / WHATSAPP', value: phone, setter: setPhone, placeholder: '(41) 9xxxx-xxxx', type: 'phone-pad' },
-    { label: 'E-MAIL', value: email, setter: setEmail, placeholder: 'email@exemplo.com', type: 'email-address' },
-  ];
-
-  const addressFields = [
-    { label: 'RUA / LOGRADOURO', value: street, setter: setStreet, placeholder: 'Rua das Flores, 123' },
-    { label: 'BAIRRO', value: neighborhood, setter: setNeighborhood, placeholder: 'Ex: Boa Vista' },
-    { label: 'CIDADE', value: city, setter: setCity, placeholder: 'Curitiba' },
-  ];
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.formContent}>
-      {fields.map((field) => (
-        <View key={field.label} style={styles.formGroup}>
-          <Text style={styles.formLabel}>{field.label}</Text>
-          <TextInput
-            style={styles.formInput}
-            value={field.value}
-            onChangeText={field.setter}
-            placeholder={field.placeholder}
-            placeholderTextColor={Colors.textMuted}
-            keyboardType={(field.type as any) || 'default'}
-            autoCapitalize={field.type ? 'none' : 'words'}
-          />
-        </View>
-      ))}
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>NOME COMPLETO</Text>
+        <TextInput style={styles.formInput} value={name} onChangeText={setName}
+          placeholder="Nome do membro" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>TELEFONE / WHATSAPP</Text>
+        <TextInput style={styles.formInput} value={phone}
+          onChangeText={(v) => setPhone(maskPhone(v))}
+          placeholder="(41) 99999-9999" placeholderTextColor={Colors.textMuted} keyboardType="phone-pad" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>DATA DE NASCIMENTO</Text>
+        <TextInput style={styles.formInput} value={birthDate}
+          onChangeText={(v) => setBirthDate(maskDate(v))}
+          placeholder="DD/MM/AAAA" placeholderTextColor={Colors.textMuted} keyboardType="numeric" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>E-MAIL</Text>
+        <TextInput style={styles.formInput} value={email} onChangeText={setEmail}
+          placeholder="email@exemplo.com" placeholderTextColor={Colors.textMuted}
+          keyboardType="email-address" autoCapitalize="none" />
+      </View>
 
       <Text style={styles.sectionDivider}>ENDEREÇO</Text>
 
-      {addressFields.map((field) => (
-        <View key={field.label} style={styles.formGroup}>
-          <Text style={styles.formLabel}>{field.label}</Text>
-          <TextInput
-            style={styles.formInput}
-            value={field.value}
-            onChangeText={field.setter}
-            placeholder={field.placeholder}
-            placeholderTextColor={Colors.textMuted}
-            autoCapitalize="words"
-          />
-        </View>
-      ))}
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>RUA / LOGRADOURO</Text>
+        <TextInput style={styles.formInput} value={street} onChangeText={setStreet}
+          placeholder="Rua das Flores, 123" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>BAIRRO</Text>
+        <TextInput style={styles.formInput} value={neighborhood} onChangeText={setNeighborhood}
+          placeholder="Ex: Boa Vista" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>CIDADE</Text>
+        <TextInput style={styles.formInput} value={city} onChangeText={setCity}
+          placeholder="Curitiba" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+      </View>
 
-      <PrimaryButton label={saving ? 'Salvando...' : 'Salvar Membro'} onPress={handleSave} />
+      <PrimaryButton label={saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Cadastrar membro'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12, alignItems: 'center' }}>
         <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>Cancelar</Text>
       </TouchableOpacity>
@@ -331,4 +377,8 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
+  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary, alignItems: 'center' },
+  btnEditText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#C0392B', alignItems: 'center' },
+  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#C0392B' },
 });

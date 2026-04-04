@@ -3,6 +3,8 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  updateDoc,
+  deleteDoc,
   doc,
   query,
   orderBy,
@@ -27,4 +29,12 @@ export async function getMember(id: string): Promise<Member | null> {
 export async function addMember(data: Omit<Member, 'id'>): Promise<string> {
   const ref = await addDoc(collection(db, COL), data);
   return ref.id;
+}
+
+export async function updateMember(id: string, data: Partial<Omit<Member, 'id'>>): Promise<void> {
+  await updateDoc(doc(db, COL, id), data as Record<string, unknown>);
+}
+
+export async function deleteMember(id: string): Promise<void> {
+  await deleteDoc(doc(db, COL, id));
 }
