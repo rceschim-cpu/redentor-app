@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -61,7 +61,18 @@ function MembersNavigator() {
       <MembersStack.Screen
         name="MembersList"
         component={MembersListScreen}
-        options={{ title: 'Membros' }}
+        options={({ navigation }) => ({
+          title: 'Membros',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.getParent()?.navigate('Dashboard')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ marginRight: 8 }}
+            >
+              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <MembersStack.Screen
         name="MemberDetail"
@@ -83,7 +94,18 @@ function GroupsNavigator() {
       <GroupsStack.Screen
         name="GroupsList"
         component={GroupsListScreen}
-        options={{ title: 'Pequenos Grupos' }}
+        options={({ navigation }) => ({
+          title: 'Pequenos Grupos',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.getParent()?.navigate('Dashboard')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ marginRight: 8 }}
+            >
+              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <GroupsStack.Screen
         name="GroupDetail"
