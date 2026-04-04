@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import CelebrationScreen from '../screens/CelebrationScreen';
 import AddGroupScreen from '../screens/AddGroupScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
@@ -82,6 +83,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
     Dashboard: '⌂',
     Members: '●●',
     SmallGroups: '▲',
+    Celebration: '✦',
   };
   return (
     <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4, color: Colors.primary }}>
@@ -127,6 +129,17 @@ function MainTabs() {
         name="SmallGroups"
         component={GroupsNavigator}
         options={{ title: 'Pequenos Grupos' }}
+      />
+      <Tab.Screen
+        name="Celebration"
+        component={CelebrationScreen}
+        options={{
+          title: '160 Anos',
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
+        }}
       />
     </Tab.Navigator>
   );

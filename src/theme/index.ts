@@ -7,12 +7,15 @@ export const Colors = {
   border: '#EDE9E3',
   borderLight: '#F5F1EC',
 
-  // Arco do vitral — cores extraídas da logo
-  archPurple: '#7B5B9E',
-  archBlue:   '#4A7FBE',
-  archGreen:  '#7BAA6A',
-  archTan:    '#C8B068',
-  archSalmon: '#C87868',
+  // Arco do vitral — 4 segmentos, extraídos do logo oficial
+  archRose:   '#C07888',  // arco externo — rosa/malva
+  archBlue:   '#8090C0',  // segundo arco — azul ardósia/periwinkle
+  archYellow: '#C8B45A',  // terceiro arco — amarelo/dourado
+  archGreen:  '#789E6E',  // arco interno — verde-sálvia
+
+  // 160 Anos — identidade comemorativa
+  gold:       '#B8963C',  // dourado da campanha
+  goldLight:  '#F5EDD6',  // fundo dourado suave
 
   // Texto
   textPrimary: '#3E3530',
