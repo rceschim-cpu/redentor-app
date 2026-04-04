@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -127,18 +127,21 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const canDelete = appUser?.role === 'administrador';
 
-  useEffect(() => {
-    getMember(memberId)
-      .then((m) => {
-        setMember(m);
-        if (m) navigation.setOptions({ title: m.name });
-        if (m?.groupId) {
-          getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
-        }
-      })
-      .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
-      .finally(() => setLoading(false));
-  }, [memberId]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      getMember(memberId)
+        .then((m) => {
+          setMember(m);
+          if (m) navigation.setOptions({ title: m.name });
+          if (m?.groupId) {
+            getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
+          }
+        })
+        .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
+        .finally(() => setLoading(false));
+    }, [memberId])
+  );
 
   const MARITAL_MAP: Record<string, string> = {
     solteiro: 'Solteiro(a)',
@@ -303,8 +306,14 @@ export function AddMemberScreen({ navigation, route }: any) {
         await addMember({ ...data, status: 'visitante' } as any);
       }
       navigation.goBack();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+    } catch (err: any) {
+      const msg = err?.message ?? 'Não foi possível salvar. Tente novamente.';
+      if (Platform.OS === 'web') {
+        // @ts-ignore
+        window.alert(`Erro: ${msg}`);
+      } else {
+        Alert.alert('Erro', msg);
+      }
     } finally {
       setSaving(false);
     }
