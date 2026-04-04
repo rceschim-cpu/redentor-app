@@ -12,6 +12,7 @@ import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import UsersScreen from '../screens/UsersScreen';
 import AddGroupScreen from '../screens/AddGroupScreen';
 import CultosScreen from '../screens/CultosScreen';
+import ParkingScreen from '../screens/ParkingScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
   MembersListScreen,
@@ -50,6 +51,11 @@ function DashboardNavigator() {
         name="Cultos"
         component={CultosScreen}
         options={{ title: 'Cultos' }}
+      />
+      <DashboardStack.Screen
+        name="Parking"
+        component={ParkingScreen}
+        options={{ title: 'Estacionamento' }}
       />
     </DashboardStack.Navigator>
   );

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -135,32 +135,35 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [g, mems] = await Promise.all([
-          getGroup(groupId),
-          getMemberships(groupId),
-        ]);
-        setGroup(g);
-        if (g) navigation.setOptions({ title: g.name });
-        setMembers(mems);
-        setPendingCount(g?.pendingCount ?? 0);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      const load = async () => {
+        try {
+          const [g, mems] = await Promise.all([
+            getGroup(groupId),
+            getMemberships(groupId),
+          ]);
+          setGroup(g);
+          if (g) navigation.setOptions({ title: g.name });
+          setMembers(mems);
+          setPendingCount(g?.pendingCount ?? 0);
 
-        if (user) {
-          const mine = await getUserMembership(groupId, user.uid);
-          setMyMembership(mine);
-        } else {
-          setMyMembership(null);
+          if (user) {
+            const mine = await getUserMembership(groupId, user.uid);
+            setMyMembership(mine);
+          } else {
+            setMyMembership(null);
+          }
+        } catch {
+          Alert.alert('Erro', 'Não foi possível carregar o grupo.');
+        } finally {
+          setLoading(false);
         }
-      } catch {
-        Alert.alert('Erro', 'Não foi possível carregar o grupo.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [groupId, user]);
+      };
+      load();
+    }, [groupId, user])
+  );
 
   const handleJoinRequest = async () => {
     if (!user || !appUser) return;

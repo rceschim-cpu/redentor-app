@@ -15,6 +15,7 @@ import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
 import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
+import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
 import { useFocusEffect } from '@react-navigation/native';
@@ -121,6 +122,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const { memberId } = route.params;
   const { appUser } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
+  const [groupName, setGroupName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const canDelete = appUser?.role === 'administrador';
@@ -130,6 +132,9 @@ export function MemberDetailScreen({ route, navigation }: any) {
       .then((m) => {
         setMember(m);
         if (m) navigation.setOptions({ title: m.name });
+        if (m?.groupId) {
+          getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
+        }
       })
       .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
       .finally(() => setLoading(false));
@@ -204,7 +209,20 @@ export function MemberDetailScreen({ route, navigation }: any) {
           <Text style={styles.cardTitle}>VIDA NA COMUNIDADE</Text>
           <DetailRow label="Batismo" value={member.baptismDate} />
           <DetailRow label="Membro desde" value={member.memberSince} />
+          <DetailRow label="Pequeno Grupo" value={groupName ?? (member.groupId ? '—' : 'Sem grupo')} />
         </Card>
+        {member.cars && member.cars.length > 0 && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>VEÍCULOS</Text>
+            {member.cars.map((car, i) => (
+              <DetailRow
+                key={i}
+                label={car.plate}
+                value={[car.model, car.color].filter(Boolean).join(' · ') || '—'}
+              />
+            ))}
+          </Card>
+        )}
         {(member.street || member.neighborhood || member.city) && (
           <Card style={{ marginBottom: 16 }}>
             <Text style={styles.cardTitle}>ENDEREÇO</Text>
@@ -249,12 +267,25 @@ export function AddMemberScreen({ navigation, route }: any) {
   const [street, setStreet] = useState(editing?.street ?? '');
   const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
   const [city, setCity] = useState(editing?.city ?? 'Curitiba');
+  const [cars, setCars] = useState<Array<{ plate: string; model: string; color: string }>>(
+    editing?.cars?.map((c) => ({ plate: c.plate, model: c.model ?? '', color: c.color ?? '' })) ?? []
+  );
   const [saving, setSaving] = useState(false);
 
+  const addCar = () => setCars((prev) => [...prev, { plate: '', model: '', color: '' }]);
+  const removeCar = (i: number) => setCars((prev) => prev.filter((_, idx) => idx !== i));
+  const updateCar = (i: number, field: 'plate' | 'model' | 'color', value: string) =>
+    setCars((prev) => prev.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
+
   const handleSave = async () => {
+    if (saving) return;
     if (!name.trim()) { Alert.alert('Nome obrigatório'); return; }
     setSaving(true);
     try {
+      const cleanCars = cars
+        .filter((c) => c.plate.trim())
+        .map((c) => ({ plate: c.plate.trim().toUpperCase(), model: c.model.trim(), color: c.color.trim() }));
+      const carPlates = cleanCars.map((c) => c.plate);
       const data = {
         name: name.trim(),
         phone: phone.trim(),
@@ -263,18 +294,15 @@ export function AddMemberScreen({ navigation, route }: any) {
         street: street.trim(),
         neighborhood: neighborhood.trim(),
         city: city.trim(),
+        cars: cleanCars,
+        carPlates,
       };
       if (editing) {
         await updateMember(editing.id, data);
-        Alert.alert('Salvo!', 'Dados do membro atualizados.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
       } else {
         await addMember({ ...data, status: 'visitante' } as any);
-        Alert.alert('Cadastrado!', 'Membro adicionado com sucesso.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
       }
+      navigation.goBack();
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
     } finally {
@@ -326,6 +354,38 @@ export function AddMemberScreen({ navigation, route }: any) {
           placeholder="Curitiba" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
       </View>
 
+      <Text style={styles.sectionDivider}>VEÍCULOS</Text>
+
+      {cars.map((car, i) => (
+        <View key={i} style={styles.carCard}>
+          <View style={styles.carHeader}>
+            <Text style={styles.formLabel}>VEÍCULO {i + 1}</Text>
+            <TouchableOpacity onPress={() => removeCar(i)}>
+              <Text style={{ color: '#C0392B', fontSize: 13, fontWeight: '600' }}>Remover</Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={styles.formInput}
+            value={car.plate}
+            onChangeText={(v) => updateCar(i, 'plate', v.toUpperCase())}
+            placeholder="Placa (ABC-1234)"
+            placeholderTextColor={Colors.textMuted}
+            autoCapitalize="characters"
+          />
+          <TextInput
+            style={[styles.formInput, { marginTop: 6 }]}
+            value={car.model}
+            onChangeText={(v) => updateCar(i, 'model', v)}
+            placeholder="Modelo (ex: HB20 Prata)"
+            placeholderTextColor={Colors.textMuted}
+          />
+        </View>
+      ))}
+
+      <TouchableOpacity style={styles.addCarBtn} onPress={addCar}>
+        <Text style={styles.addCarBtnText}>+ Adicionar veículo</Text>
+      </TouchableOpacity>
+
       <PrimaryButton label={saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Cadastrar membro'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12, alignItems: 'center' }}>
         <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>Cancelar</Text>
@@ -363,6 +423,10 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
+  carCard: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 0 },
+  carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center' },
+  addCarBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
   btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.primary, alignItems: 'center' },
   btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
