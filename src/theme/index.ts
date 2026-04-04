@@ -1,11 +1,11 @@
 export const Colors = {
-  // Brand — Comunidade do Redentor
-  primary: '#3E3530',       // Marrom escuro quente (cor principal)
-  primaryLight: '#5C504A',
-  background: '#FAF9F7',    // Off-white quente
+  // Brand — Comunidade do Redentor (Proposta "Cal e Sombra")
+  primary: '#4A7AB5',       // Azul vitral — cor de acento principal
+  primaryLight: '#6B96C8',
+  background: '#B8B5B0',    // Cinza-concreto (parede da igreja)
   surface: '#FFFFFF',
-  border: '#EDE9E3',
-  borderLight: '#F5F1EC',
+  border: '#D0CEC9',
+  borderLight: '#E0DEDА',
 
   // Arco do vitral — 4 segmentos, extraídos do logo oficial
   archRose:   '#C07888',  // arco externo — rosa/malva
@@ -17,10 +17,14 @@ export const Colors = {
   gold:       '#B8963C',  // dourado da campanha
   goldLight:  '#F5EDD6',  // fundo dourado suave
 
+  // Header / nav bar
+  headerBg: '#F5F4F2',      // Quase-branco (cal da igreja)
+  headerText: '#111111',
+
   // Texto
-  textPrimary: '#3E3530',
-  textSecondary: '#9E8E84',
-  textMuted: '#B8AFA8',
+  textPrimary: '#111111',
+  textSecondary: '#555550',
+  textMuted: '#888884',
   textOnDark: '#FFFFFF',
 
   // Status

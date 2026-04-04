@@ -23,9 +23,9 @@ const MembersStack = createNativeStackNavigator();
 const GroupsStack = createNativeStackNavigator();
 
 const headerStyle = {
-  headerStyle: { backgroundColor: Colors.primary },
-  headerTintColor: '#fff' as const,
-  headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
+  headerStyle: { backgroundColor: Colors.headerBg },
+  headerTintColor: Colors.headerText as string,
+  headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
 
@@ -98,7 +98,7 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: Colors.headerBg,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
           height: 68,
@@ -112,7 +112,7 @@ function MainTabs() {
         },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarInactiveTintColor: Colors.textSecondary,
       })}
     >
       <Tab.Screen
@@ -136,9 +136,7 @@ function MainTabs() {
         options={{
           title: '160 Anos',
           headerShown: true,
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17 },
+          ...headerStyle,
         }}
       />
     </Tab.Navigator>
