@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
+import { useFocusEffect } from '@react-navigation/native';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
@@ -27,12 +28,15 @@ export function MembersListScreen({ navigation }: any) {
   const [filter, setFilter] = useState<MemberStatus | 'todos'>('todos');
   const canAddMember = appUser?.role === 'administrador' || appUser?.role === 'pastor';
 
-  useEffect(() => {
-    getMembers()
-      .then(setMembers)
-      .catch(() => Alert.alert('Erro', 'Não foi possível carregar os membros.'))
-      .finally(() => setLoading(false));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      getMembers()
+        .then(setMembers)
+        .catch(() => Alert.alert('Erro', 'Não foi possível carregar os membros.'))
+        .finally(() => setLoading(false));
+    }, [])
+  );
 
   const filtered = members.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());

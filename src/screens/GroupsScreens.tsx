@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/group
 import { getMemberships, getPendingRequests, getUserMembership, requestToJoin } from '../services/memberships';
 import { canCreateGroup, canManageGroup, canViewRequests } from '../services/permissions';
 import { useAuth } from '../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 // ─── Lista de Pequenos Grupos ──────────────────────────────────────────────────
 export function GroupsListScreen({ navigation }: any) {
@@ -24,12 +25,15 @@ export function GroupsListScreen({ navigation }: any) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getGroups()
-      .then(setGroups)
-      .catch(() => Alert.alert('Erro', 'Não foi possível carregar os grupos.'))
-      .finally(() => setLoading(false));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      getGroups()
+        .then(setGroups)
+        .catch(() => Alert.alert('Erro', 'Não foi possível carregar os grupos.'))
+        .finally(() => setLoading(false));
+    }, [])
+  );
 
   const canCreate = appUser ? canCreateGroup(appUser.role) : false;
 
