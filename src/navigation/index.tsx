@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,6 +11,7 @@ import CelebrationScreen from '../screens/CelebrationScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import UsersScreen from '../screens/UsersScreen';
 import AddGroupScreen from '../screens/AddGroupScreen';
+import CultosScreen from '../screens/CultosScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
   MembersListScreen,
@@ -45,6 +46,11 @@ function DashboardNavigator() {
         component={UsersScreen}
         options={{ title: 'Usuários' }}
       />
+      <DashboardStack.Screen
+        name="Cultos"
+        component={CultosScreen}
+        options={{ title: 'Cultos' }}
+      />
     </DashboardStack.Navigator>
   );
 }
@@ -55,7 +61,17 @@ function MembersNavigator() {
       <MembersStack.Screen
         name="MembersList"
         component={MembersListScreen}
-        options={{ title: 'Membros' }}
+        options={({ navigation }) => ({
+          title: 'Membros',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.getParent()?.navigate('Dashboard')}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ fontSize: 20, color: Colors.headerText }}>⌂</Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <MembersStack.Screen
         name="MemberDetail"
@@ -77,7 +93,17 @@ function GroupsNavigator() {
       <GroupsStack.Screen
         name="GroupsList"
         component={GroupsListScreen}
-        options={{ title: 'Pequenos Grupos' }}
+        options={({ navigation }) => ({
+          title: 'Pequenos Grupos',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.getParent()?.navigate('Dashboard')}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ fontSize: 20, color: Colors.headerText }}>⌂</Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <GroupsStack.Screen
         name="GroupDetail"

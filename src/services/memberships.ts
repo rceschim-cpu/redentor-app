@@ -8,6 +8,7 @@ import {
   where,
   writeBatch,
   limit,
+  increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { GroupMembership, MembershipStatus } from '../types';
@@ -67,7 +68,7 @@ export async function requestToJoin(
   });
   // Incrementa pendingCount no grupo
   await updateDoc(doc(db, 'groups', groupId), {
-    pendingCount: (await import('firebase/firestore')).increment(1),
+    pendingCount: increment(1),
   });
   return ref.id;
 }
@@ -81,8 +82,6 @@ export async function respondToRequest(
   const batch = writeBatch(db);
   const membershipRef = doc(db, MEMBERSHIPS(groupId), membershipId);
   const groupRef = doc(db, 'groups', groupId);
-  const { increment } = await import('firebase/firestore');
-
   batch.update(membershipRef, {
     status,
     resolvedAt: new Date().toISOString(),
@@ -106,7 +105,6 @@ export async function removeMember(
   groupId: string,
   membershipId: string
 ): Promise<void> {
-  const { increment } = await import('firebase/firestore');
   const batch = writeBatch(db);
   batch.update(doc(db, MEMBERSHIPS(groupId), membershipId), { status: 'rejeitado' });
   batch.update(doc(db, 'groups', groupId), { memberCount: increment(-1) });
