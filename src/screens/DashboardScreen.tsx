@@ -108,7 +108,7 @@ export default function DashboardScreen({ navigation }: any) {
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={handleSignOut}>
-              <Avatar name={displayName} size={38} index={1} />
+              <Avatar name={displayName} size={38} index={1} photoURL={appUser?.photoURL} />
             </TouchableOpacity>
           </View>
         </View>
