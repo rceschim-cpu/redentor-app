@@ -16,6 +16,7 @@ export interface AppUserProfile {
   role: UserRole;
   memberId?: string;         // referência ao doc na coleção members
   profileComplete?: boolean; // true após completar cadastro no primeiro acesso
+  photoURL?: string;         // foto importada do Google (ou outra provider)
   createdAt?: string;
 }
 

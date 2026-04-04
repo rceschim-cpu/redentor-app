@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { getUserProfile, createUserProfile } from '../services/userProfile';
+import { getUserProfile, createUserProfile, updateUserProfile } from '../services/userProfile';
 import { AppUserProfile } from '../types';
 
 interface AuthContextType {
@@ -31,9 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuário',
         email: firebaseUser.email ?? '',
         role: 'membro',
+        ...(firebaseUser.photoURL ? { photoURL: firebaseUser.photoURL } : {}),
       };
       await createUserProfile(firebaseUser.uid, newProfile);
       profile = await getUserProfile(firebaseUser.uid);
+    } else if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
+      // Atualiza foto se mudou no Google
+      await updateUserProfile(firebaseUser.uid, { photoURL: firebaseUser.photoURL });
+      profile = { ...profile, photoURL: firebaseUser.photoURL };
     }
     setAppUser(profile);
   };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Radius, getAvatarColor } from '../theme';
 
 // ─── Avatar ────────────────────────────────────────────────────────────────
@@ -7,8 +7,17 @@ interface AvatarProps {
   name: string;
   size?: number;
   index?: number;
+  photoURL?: string;
 }
-export const Avatar = ({ name, size = 40, index = 0 }: AvatarProps) => {
+export const Avatar = ({ name, size = 40, index = 0, photoURL }: AvatarProps) => {
+  if (photoURL) {
+    return (
+      <Image
+        source={{ uri: photoURL }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      />
+    );
+  }
   const initials = name
     .split(' ')
     .slice(0, 2)
