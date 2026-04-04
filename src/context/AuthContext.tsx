@@ -35,10 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await createUserProfile(firebaseUser.uid, newProfile);
       profile = await getUserProfile(firebaseUser.uid);
-    } else if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
-      // Atualiza foto se mudou no Google
-      await updateUserProfile(firebaseUser.uid, { photoURL: firebaseUser.photoURL });
-      profile = { ...profile, photoURL: firebaseUser.photoURL };
+    } else {
+      // Sincroniza campos que podem ter mudado (foto Google, displayName do signup)
+      const updates: Partial<AppUserProfile> = {};
+      if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
+        updates.photoURL = firebaseUser.photoURL;
+      }
+      if (firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
+        updates.name = firebaseUser.displayName;
+      }
+      if (Object.keys(updates).length > 0) {
+        await updateUserProfile(firebaseUser.uid, updates);
+        profile = { ...profile, ...updates };
+      }
     }
     setAppUser(profile);
   };
@@ -47,7 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        await loadAppUser(u);
+        try {
+          await loadAppUser(u);
+        } catch (err) {
+          console.error('Erro ao carregar perfil do usuário:', err);
+        }
       } else {
         setAppUser(null);
       }

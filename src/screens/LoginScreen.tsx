@@ -25,24 +25,34 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const showError = (title: string, msg?: string) => {
+    const full = msg ? `${title}\n${msg}` : title;
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      window.alert(full);
+    } else {
+      Alert.alert(title, msg);
+    }
+  };
+
   const switchMode = (next: Mode) => {
     setMode(next);
+    // Preserva email ao trocar de aba; limpa apenas nome e senhas
     setName('');
-    setEmail('');
     setPassword('');
     setConfirmPassword('');
   };
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      Alert.alert('Preencha todos os campos');
+      showError('Preencha todos os campos');
       return;
     }
     setLoading(true);
     try {
       await signIn(email.trim(), password);
     } catch (e: any) {
-      Alert.alert('Erro ao entrar', translateAuthError(e.code));
+      showError('Erro ao entrar', translateAuthError(e.code));
     } finally {
       setLoading(false);
     }
@@ -50,15 +60,15 @@ export default function LoginScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
-      Alert.alert('Preencha todos os campos');
+      showError('Preencha todos os campos');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
+      showError('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Senhas diferentes', 'As senhas não coincidem.');
+      showError('Senhas diferentes', 'As senhas não coincidem.');
       return;
     }
     setLoading(true);
@@ -66,7 +76,7 @@ export default function LoginScreen() {
       await signUp(name.trim(), email.trim(), password);
       // AuthContext cria o perfil automaticamente via onAuthStateChanged
     } catch (e: any) {
-      Alert.alert('Erro ao criar conta', translateAuthError(e.code));
+      showError('Erro ao criar conta', translateAuthError(e.code));
     } finally {
       setLoading(false);
     }
@@ -74,14 +84,14 @@ export default function LoginScreen() {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Informe seu e-mail primeiro para recuperar a senha.');
+      showError('Informe seu e-mail primeiro para recuperar a senha.');
       return;
     }
     try {
       await resetPassword(email.trim());
-      Alert.alert('E-mail enviado', 'Verifique sua caixa de entrada para redefinir a senha.');
+      showError('E-mail enviado', 'Verifique sua caixa de entrada para redefinir a senha.');
     } catch (e: any) {
-      Alert.alert('Erro', translateAuthError(e.code));
+      showError('Erro', translateAuthError(e.code));
     }
   };
 
@@ -197,7 +207,7 @@ export default function LoginScreen() {
                 await signInWithGoogle();
               } catch (e: any) {
                 if (e.code !== 'auth/popup-closed-by-user') {
-                  Alert.alert('Erro', translateAuthError(e.code));
+                  showError('Erro', translateAuthError(e.code));
                 }
               }
             }}
