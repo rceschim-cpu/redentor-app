@@ -10,14 +10,28 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { signIn, resetPassword, signInWithGoogle, translateAuthError } from '../services/auth';
+import { signIn, signUp, resetPassword, signInWithGoogle, translateAuthError } from '../services/auth';
+
+type Mode = 'login' | 'register';
 
 export default function LoginScreen() {
+  const [mode, setMode] = useState<Mode>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -27,9 +41,32 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-      // navegação automática via AuthContext
     } catch (e: any) {
       Alert.alert('Erro ao entrar', translateAuthError(e.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password) {
+      Alert.alert('Preencha todos os campos');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Senhas diferentes', 'As senhas não coincidem.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await signUp(name.trim(), email.trim(), password);
+      // AuthContext cria o perfil automaticamente via onAuthStateChanged
+    } catch (e: any) {
+      Alert.alert('Erro ao criar conta', translateAuthError(e.code));
     } finally {
       setLoading(false);
     }
@@ -53,89 +90,138 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
-        <Image
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.logoSub}>Área do Membro</Text>
-      </View>
-
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>E-MAIL</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="seu@email.com"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
           />
+          <Text style={styles.logoSub}>Área do Membro</Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>SENHA</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            placeholderTextColor={Colors.textMuted}
-            secureTextEntry
-          />
+        {/* Tabs login / criar conta */}
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[styles.tab, mode === 'login' && styles.tabActive]}
+            onPress={() => switchMode('login')}
+          >
+            <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>Entrar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, mode === 'register' && styles.tabActive]}
+            onPress={() => switchMode('register')}
+          >
+            <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>Criar conta</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.btnPrimary, loading && styles.btnDisabled]}
-          onPress={handleLogin}
-          activeOpacity={0.85}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>Entrar</Text>
+        <View style={styles.form}>
+          {mode === 'register' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>NOME COMPLETO</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Seu nome"
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="words"
+              />
+            </View>
           )}
-        </TouchableOpacity>
 
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>ou</Text>
-          <View style={styles.dividerLine} />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>E-MAIL</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="seu@email.com"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+          </View>
 
-        <TouchableOpacity
-          style={styles.btnGoogle}
-          onPress={async () => {
-            try {
-              await signInWithGoogle();
-            } catch (e: any) {
-              if (e.code !== 'auth/popup-closed-by-user') {
-                Alert.alert('Erro', translateAuthError(e.code));
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>SENHA</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              placeholderTextColor={Colors.textMuted}
+              secureTextEntry
+            />
+          </View>
+
+          {mode === 'register' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>CONFIRMAR SENHA</Text>
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textMuted}
+                secureTextEntry
+              />
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.btnPrimary, loading && styles.btnDisabled]}
+            onPress={mode === 'login' ? handleLogin : handleRegister}
+            activeOpacity={0.85}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.btnText}>{mode === 'login' ? 'Entrar' : 'Criar conta'}</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ou</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.btnGoogle}
+            onPress={async () => {
+              try {
+                await signInWithGoogle();
+              } catch (e: any) {
+                if (e.code !== 'auth/popup-closed-by-user') {
+                  Alert.alert('Erro', translateAuthError(e.code));
+                }
               }
-            }
-          }}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnGoogleText}>🔵  Entrar com Google</Text>
-        </TouchableOpacity>
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.btnGoogleText}>🔵  Entrar com Google</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnLink} onPress={handleForgotPassword}>
-          <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
-        </TouchableOpacity>
+          {mode === 'login' && (
+            <TouchableOpacity style={styles.btnLink} onPress={handleForgotPassword}>
+              <Text style={styles.btnLinkText}>Esqueci minha senha</Text>
+            </TouchableOpacity>
+          )}
 
-        <Text style={styles.footer}>Comunidade do Redentor · IECLB</Text>
-      </View>
+          <Text style={styles.footer}>Comunidade do Redentor · IECLB</Text>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { flexGrow: 1 },
   header: {
     backgroundColor: Colors.surface,
     paddingTop: 60,
@@ -153,6 +239,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 4,
   },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: { borderBottomColor: Colors.primary },
+  tabText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
+  tabTextActive: { color: Colors.primary },
   form: { flex: 1, padding: 24, gap: 16 },
   inputGroup: { gap: 6 },
   label: {

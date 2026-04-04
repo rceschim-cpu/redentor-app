@@ -1,5 +1,7 @@
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   GoogleAuthProvider,
@@ -9,6 +11,12 @@ import { auth } from './firebase';
 
 export async function signIn(email: string, password: string) {
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signUp(name: string, email: string, password: string) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(cred.user, { displayName: name });
+  return cred;
 }
 
 export async function signOut() {
