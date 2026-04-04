@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, Card, DetailRow, PrimaryButton } from '../components';
@@ -131,7 +130,6 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
-  const statusBarHeight = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight ?? 24);
 
   useEffect(() => {
     const load = async () => {
@@ -141,6 +139,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
           getMemberships(groupId),
         ]);
         setGroup(g);
+        if (g) navigation.setOptions({ title: g.name });
         setMembers(mems);
         setPendingCount(g?.pendingCount ?? 0);
 
@@ -174,6 +173,27 @@ export function GroupDetailScreen({ route, navigation }: any) {
     }
   };
 
+  const handleGroupDelete = () => {
+    const doDelete = async () => {
+      try {
+        await deleteGroup(group!.id);
+        navigation.goBack();
+      } catch {
+        Alert.alert('Erro', 'Não foi possível excluir o grupo.');
+      }
+    };
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      if (window.confirm(`Excluir "${group!.name}"? Esta ação não pode ser desfeita.`)) doDelete();
+    } else {
+      Alert.alert(
+        'Excluir grupo',
+        `Tem certeza que deseja excluir "${group!.name}"? Esta ação não pode ser desfeita.`,
+        [{ text: 'Cancelar', style: 'cancel' }, { text: 'Excluir', style: 'destructive', onPress: doDelete }]
+      );
+    }
+  };
+
   if (loading || !group) {
     return (
       <View style={styles.center}>
@@ -193,14 +213,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
   return (
     <View style={styles.container}>
       {/* Hero */}
-      <View style={[styles.groupHero, { paddingTop: statusBarHeight + 16 }]}>
-        <TouchableOpacity
-          style={[styles.backBtn, { top: statusBarHeight + 10 }]}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backBtnIcon}>‹</Text>
-        </TouchableOpacity>
+      <View style={styles.groupHero}>
         <View style={styles.heroIconRow}>
           <View style={styles.heroIconWrap}>
             <Text style={styles.heroEmoji}>{group.icon ?? '🏠'}</Text>
@@ -325,27 +338,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
         {appUser?.role === 'administrador' && (
           <TouchableOpacity
             style={styles.btnDelete}
-            onPress={() =>
-              Alert.alert(
-                'Excluir grupo',
-                `Tem certeza que deseja excluir "${group.name}"? Esta ação não pode ser desfeita.`,
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  {
-                    text: 'Excluir',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        await deleteGroup(group.id);
-                        navigation.goBack();
-                      } catch {
-                        Alert.alert('Erro', 'Não foi possível excluir o grupo.');
-                      }
-                    },
-                  },
-                ]
-              )
-            }
+            onPress={handleGroupDelete}
           >
             <Text style={styles.btnDeleteText}>Excluir grupo</Text>
           </TouchableOpacity>
@@ -447,19 +440,6 @@ const styles = StyleSheet.create({
   },
   fabText: { color: '#fff', fontSize: 24, lineHeight: 28 },
   groupHero: { backgroundColor: Colors.headerBg, padding: Spacing.lg },
-  backBtn: {
-    position: 'absolute',
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnIcon: { fontSize: 26, color: Colors.textPrimary, lineHeight: 30, marginTop: -2 },
   heroIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -581,8 +561,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnOutlineText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary, alignItems: 'center' },
-  btnEditText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#C0392B', alignItems: 'center' },
-  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#C0392B' },
+  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.primary, alignItems: 'center' },
+  btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
+  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });

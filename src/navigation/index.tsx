@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -61,22 +61,12 @@ function MembersNavigator() {
       <MembersStack.Screen
         name="MembersList"
         component={MembersListScreen}
-        options={({ navigation }) => ({
-          title: 'Membros',
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.getParent()?.navigate('Dashboard')}
-              style={{ paddingHorizontal: 4 }}
-            >
-              <Text style={{ fontSize: 20, color: Colors.headerText }}>⌂</Text>
-            </TouchableOpacity>
-          ),
-        })}
+        options={{ title: 'Membros' }}
       />
       <MembersStack.Screen
         name="MemberDetail"
         component={MemberDetailScreen}
-        options={{ headerShown: false }}
+        options={{ title: '' }}
       />
       <MembersStack.Screen
         name="AddMember"
@@ -93,22 +83,12 @@ function GroupsNavigator() {
       <GroupsStack.Screen
         name="GroupsList"
         component={GroupsListScreen}
-        options={({ navigation }) => ({
-          title: 'Pequenos Grupos',
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.getParent()?.navigate('Dashboard')}
-              style={{ paddingHorizontal: 4 }}
-            >
-              <Text style={{ fontSize: 20, color: Colors.headerText }}>⌂</Text>
-            </TouchableOpacity>
-          ),
-        })}
+        options={{ title: 'Pequenos Grupos' }}
       />
       <GroupsStack.Screen
         name="GroupDetail"
         component={GroupDetailScreen}
-        options={{ headerShown: false }}
+        options={{ title: '' }}
       />
       <GroupsStack.Screen
         name="AddGroup"
