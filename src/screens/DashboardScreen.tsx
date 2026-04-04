@@ -110,7 +110,7 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   hero: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.headerBg,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   heroLogo: { width: 130, height: 46 },
-  greeting: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 2 },
-  name: { fontSize: 22, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
+  greeting: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
+  name: { fontSize: 22, fontWeight: '700', color: Colors.headerText, fontFamily: 'Lora_600SemiBold' },
   body: { flex: 1, paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.lg },
   statCard: {
