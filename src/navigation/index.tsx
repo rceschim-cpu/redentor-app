@@ -40,7 +40,7 @@ function MembersNavigator() {
       <MembersStack.Screen
         name="MemberDetail"
         component={MemberDetailScreen}
-        options={{ title: 'Perfil do Membro' }}
+        options={{ headerShown: false }}
       />
       <MembersStack.Screen
         name="AddMember"
@@ -62,7 +62,7 @@ function GroupsNavigator() {
       <GroupsStack.Screen
         name="GroupDetail"
         component={GroupDetailScreen}
-        options={{ title: 'Detalhes do Grupo' }}
+        options={{ headerShown: false }}
       />
       <GroupsStack.Screen
         name="AddGroup"

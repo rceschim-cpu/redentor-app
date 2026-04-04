@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, Card, DetailRow, PrimaryButton } from '../components';
@@ -129,6 +131,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const statusBarHeight = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight ?? 24);
 
   useEffect(() => {
     const load = async () => {
@@ -190,7 +193,14 @@ export function GroupDetailScreen({ route, navigation }: any) {
   return (
     <View style={styles.container}>
       {/* Hero */}
-      <View style={styles.groupHero}>
+      <View style={[styles.groupHero, { paddingTop: statusBarHeight + 16 }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, { top: statusBarHeight + 10 }]}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backBtnIcon}>‹</Text>
+        </TouchableOpacity>
         <View style={styles.heroIconRow}>
           <View style={styles.heroIconWrap}>
             <Text style={styles.heroEmoji}>{group.icon ?? '🏠'}</Text>
@@ -343,7 +353,7 @@ const styles = StyleSheet.create({
   },
   groupLeader: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   pendingBadge: {
-    backgroundColor: Colors.archSalmon,
+    backgroundColor: Colors.archRose,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -399,18 +409,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   fabText: { color: '#fff', fontSize: 24, lineHeight: 28 },
-  groupHero: { backgroundColor: Colors.primary, padding: Spacing.lg },
+  groupHero: { backgroundColor: Colors.headerBg, padding: Spacing.lg },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnIcon: { fontSize: 26, color: Colors.textPrimary, lineHeight: 30, marginTop: -2 },
   heroIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 14,
+    marginTop: 8,
   },
   heroIconWrap: {
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -418,27 +440,29 @@ const styles = StyleSheet.create({
   heroName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.headerText,
     fontFamily: 'Lora_600SemiBold',
   },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 },
+  heroSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 3 },
   heroStats: { flexDirection: 'row', gap: 8 },
   heroStat: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: Colors.surface,
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   heroStatNum: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.textPrimary,
     fontFamily: 'Lora_600SemiBold',
   },
   heroStatLbl: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.45)',
+    color: Colors.textMuted,
     textTransform: 'uppercase',
     marginTop: 2,
   },

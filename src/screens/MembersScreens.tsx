@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
@@ -106,10 +108,11 @@ export function MembersListScreen({ navigation }: any) {
 }
 
 // ─── Detalhe do Membro ────────────────────────────────────────────────────
-export function MemberDetailScreen({ route }: any) {
+export function MemberDetailScreen({ route, navigation }: any) {
   const { memberId } = route.params;
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
+  const statusBarHeight = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight ?? 24);
 
   useEffect(() => {
     getMember(memberId)
@@ -143,7 +146,14 @@ export function MemberDetailScreen({ route }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.memberHero}>
+      <View style={[styles.memberHero, { paddingTop: statusBarHeight + 16 }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, { top: statusBarHeight + 10 }]}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backBtnIcon}>‹</Text>
+        </TouchableOpacity>
         <Avatar name={member.name} size={72} index={member.avatarIndex} />
         <Text style={styles.heroName}>{member.name}</Text>
         <Text style={styles.heroRole}>
@@ -293,9 +303,20 @@ const styles = StyleSheet.create({
   memberSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   fab: { position: 'absolute', bottom: 20, right: 20, width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   fabText: { color: '#fff', fontSize: 24, lineHeight: 28 },
-  memberHero: { backgroundColor: Colors.primary, padding: Spacing.xl, alignItems: 'center' },
-  heroName: { fontSize: 20, fontWeight: '700', color: '#fff', marginTop: 10, fontFamily: 'Lora_600SemiBold' },
-  heroRole: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
+  memberHero: { backgroundColor: Colors.headerBg, padding: Spacing.xl, alignItems: 'center' },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtnIcon: { fontSize: 26, color: Colors.textPrimary, lineHeight: 30, marginTop: -2 },
+  heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, marginTop: 10, fontFamily: 'Lora_600SemiBold' },
+  heroRole: { fontSize: 11, color: Colors.textSecondary, marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
   detailBody: { flex: 1, padding: Spacing.md },
   cardTitle: { fontSize: 10, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
   formContent: { padding: Spacing.lg, gap: 14 },

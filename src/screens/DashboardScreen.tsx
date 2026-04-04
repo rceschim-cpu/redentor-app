@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,52 @@ import {
   StyleSheet,
   Alert,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { ArchBar, Avatar } from '../components';
+import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from '../services/auth';
 import { getMembers } from '../services/members';
 import { getGroups } from '../services/groups';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BANNER_WIDTH = SCREEN_WIDTH - Spacing.lg * 2;
+
+const BANNERS = [
+  {
+    id: '1',
+    color: Colors.archRose,
+    icon: '⛪',
+    title: 'Culto Dominical',
+    sub: 'Domingo às 10h · Templo Principal',
+    screen: null,
+  },
+  {
+    id: '2',
+    color: Colors.archBlue,
+    icon: '📅',
+    title: 'Agenda da Semana',
+    sub: 'Confira os próximos eventos',
+    screen: null,
+  },
+  {
+    id: '3',
+    color: Colors.gold,
+    icon: '✦',
+    title: '160 Anos do Redentor',
+    sub: '1865 · Celebrando nossa história',
+    screen: 'Celebration',
+  },
+  {
+    id: '4',
+    color: Colors.archGreen,
+    icon: '🏘️',
+    title: 'Pequenos Grupos',
+    sub: 'Encontre seu grupo desta semana',
+    screen: 'SmallGroups',
+  },
+];
 
 const MODULES = [
   { icon: '👥', label: 'Membros', sub: 'Cadastro geral', color: '#EDE9F7', screen: 'Members' },
@@ -27,6 +66,7 @@ export default function DashboardScreen({ navigation }: any) {
   const { user } = useAuth();
   const [memberCount, setMemberCount] = useState('—');
   const [groupCount, setGroupCount] = useState('—');
+  const [activeBanner, setActiveBanner] = useState(0);
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
 
@@ -49,7 +89,6 @@ export default function DashboardScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
-        <ArchBar />
         <View style={styles.heroRow}>
           <View style={styles.heroLogoWrap}>
             <Image
@@ -64,6 +103,55 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
         <Text style={styles.greeting}>Bem-vindo de volta</Text>
         <Text style={styles.name}>{displayName}</Text>
+
+        {/* Banner carousel */}
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          style={styles.bannerScroll}
+          onMomentumScrollEnd={(e) => {
+            const index = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
+            setActiveBanner(index);
+          }}
+        >
+          {BANNERS.map((banner) => (
+            <TouchableOpacity
+              key={banner.id}
+              activeOpacity={0.85}
+              style={[styles.bannerSlide, { width: BANNER_WIDTH, backgroundColor: banner.color }]}
+              onPress={() =>
+                banner.screen
+                  ? navigation.navigate(banner.screen)
+                  : Alert.alert(banner.title, banner.sub)
+              }
+            >
+              <Text style={styles.bannerIcon}>{banner.icon}</Text>
+              <View style={styles.bannerText}>
+                <Text style={styles.bannerTitle}>{banner.title}</Text>
+                <Text style={styles.bannerSub}>{banner.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Indicadores do arco vitral */}
+        <View style={styles.indicators}>
+          {BANNERS.map((b, i) => (
+            <View
+              key={b.id}
+              style={[
+                styles.indicatorDot,
+                {
+                  backgroundColor: b.color,
+                  width: i === activeBanner ? 18 : 6,
+                  opacity: i === activeBanner ? 1 : 0.35,
+                },
+              ]}
+            />
+          ))}
+        </View>
       </View>
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
@@ -122,10 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   heroLogoWrap: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: 'transparent',
   },
   heroLogo: { width: 130, height: 46 },
   greeting: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
@@ -157,4 +242,29 @@ const styles = StyleSheet.create({
   moduleEmoji: { fontSize: 16 },
   moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   moduleSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  bannerScroll: { marginTop: Spacing.lg, marginBottom: 0 },
+  bannerSlide: {
+    borderRadius: Radius.lg,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 68,
+  },
+  bannerIcon: { fontSize: 26 },
+  bannerText: { flex: 1 },
+  bannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
+  bannerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  indicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  indicatorDot: {
+    height: 6,
+    borderRadius: 3,
+  },
 });
