@@ -15,7 +15,11 @@ export async function signIn(email: string, password: string) {
 
 export async function signUp(name: string, email: string, password: string) {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
+  // updateProfile ANTES de retornar para que loadAppUser no AuthContext
+  // já encontre o displayName correto quando rodar (evita race condition)
   await updateProfile(cred.user, { displayName: name });
+  // Recarrega o usuário para sincronizar o displayName no objeto auth.currentUser
+  await cred.user.reload();
   return cred;
 }
 
@@ -40,6 +44,9 @@ export function translateAuthError(code: string): string {
     'auth/invalid-credential': 'E-mail ou senha incorretos.',
     'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
     'auth/network-request-failed': 'Sem conexão. Verifique sua internet.',
+    'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
+    'auth/weak-password': 'Senha muito fraca. Use pelo menos 6 caracteres.',
+    'auth/operation-not-allowed': 'Cadastro desativado. Contate o administrador.',
   };
-  return map[code] ?? 'Erro ao entrar. Tente novamente.';
+  return map[code] ?? 'Erro inesperado. Tente novamente.';
 }
