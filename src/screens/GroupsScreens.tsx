@@ -14,7 +14,7 @@ import {
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, Card, DetailRow, PrimaryButton } from '../components';
 import { Group, GroupMembership } from '../types';
-import { getGroups, getGroup } from '../services/groups';
+import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/groups';
 import { getMemberships, getPendingRequests, getUserMembership, requestToJoin } from '../services/memberships';
 import { canCreateGroup, canManageGroup, canViewRequests } from '../services/permissions';
 import { useAuth } from '../context/AuthContext';
@@ -314,6 +314,43 @@ export function GroupDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
+        {isManager && (
+          <TouchableOpacity
+            style={styles.btnEdit}
+            onPress={() => navigation.navigate('AddGroup', { group })}
+          >
+            <Text style={styles.btnEditText}>Editar grupo</Text>
+          </TouchableOpacity>
+        )}
+        {appUser?.role === 'administrador' && (
+          <TouchableOpacity
+            style={styles.btnDelete}
+            onPress={() =>
+              Alert.alert(
+                'Excluir grupo',
+                `Tem certeza que deseja excluir "${group.name}"? Esta ação não pode ser desfeita.`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await deleteGroup(group.id);
+                        navigation.goBack();
+                      } catch {
+                        Alert.alert('Erro', 'Não foi possível excluir o grupo.');
+                      }
+                    },
+                  },
+                ]
+              )
+            }
+          >
+            <Text style={styles.btnDeleteText}>Excluir grupo</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 30 }} />
       </ScrollView>
     </View>
@@ -544,4 +581,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnOutlineText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary, alignItems: 'center' },
+  btnEditText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#C0392B', alignItems: 'center' },
+  btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#C0392B' },
 });

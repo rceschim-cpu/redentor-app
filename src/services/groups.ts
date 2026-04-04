@@ -4,6 +4,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
   query,
   orderBy,
@@ -48,4 +49,8 @@ export async function createGroup(
 
 export async function updateGroup(id: string, data: Partial<Group>): Promise<void> {
   await updateDoc(doc(db, COL, id), data as Record<string, unknown>);
+}
+
+export async function deleteGroup(id: string): Promise<void> {
+  await deleteDoc(doc(db, COL, id));
 }
