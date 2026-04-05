@@ -261,12 +261,28 @@ export function MemberDetailScreen({ route, navigation }: any) {
 }
 
 // ─── Cadastro / Edição de Membro ─────────────────────────────────────────────
+const MARITAL_OPTIONS = [
+  { key: 'solteiro', label: 'Solteiro(a)' },
+  { key: 'casado', label: 'Casado(a)' },
+  { key: 'divorciado', label: 'Divorciado(a)' },
+  { key: 'viuvo', label: 'Viúvo(a)' },
+];
+const STATUS_OPTIONS = [
+  { key: 'visitante', label: 'Visitante' },
+  { key: 'ativo', label: 'Ativo' },
+  { key: 'inativo', label: 'Inativo' },
+];
+
 export function AddMemberScreen({ navigation, route }: any) {
   const editing: Member | undefined = route.params?.member;
   const [name, setName] = useState(editing?.name ?? '');
   const [phone, setPhone] = useState(editing?.phone ?? '');
   const [birthDate, setBirthDate] = useState(editing?.birthDate ?? '');
   const [email, setEmail] = useState(editing?.email ?? '');
+  const [maritalStatus, setMaritalStatus] = useState(editing?.maritalStatus ?? '');
+  const [status, setStatus] = useState<MemberStatus>(editing?.status ?? 'visitante');
+  const [baptismDate, setBaptismDate] = useState(editing?.baptismDate ?? '');
+  const [memberSince, setMemberSince] = useState(editing?.memberSince ?? '');
   const [street, setStreet] = useState(editing?.street ?? '');
   const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
   const [city, setCity] = useState(editing?.city ?? 'Curitiba');
@@ -294,6 +310,10 @@ export function AddMemberScreen({ navigation, route }: any) {
         phone: phone.trim(),
         birthDate: birthDate.trim(),
         email: email.trim(),
+        maritalStatus: maritalStatus || undefined,
+        status,
+        baptismDate: baptismDate.trim() || undefined,
+        memberSince: memberSince.trim() || undefined,
         street: street.trim(),
         neighborhood: neighborhood.trim(),
         city: city.trim(),
@@ -303,7 +323,7 @@ export function AddMemberScreen({ navigation, route }: any) {
       if (editing) {
         await updateMember(editing.id, data);
       } else {
-        await addMember({ ...data, status: 'visitante' } as any);
+        await addMember(data as any);
       }
       navigation.goBack();
     } catch (err: any) {
@@ -343,6 +363,55 @@ export function AddMemberScreen({ navigation, route }: any) {
         <TextInput style={styles.formInput} value={email} onChangeText={setEmail}
           placeholder="email@exemplo.com" placeholderTextColor={Colors.textMuted}
           keyboardType="email-address" autoCapitalize="none" />
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>ESTADO CIVIL</Text>
+        <View style={styles.chipRow}>
+          {MARITAL_OPTIONS.map((o) => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.chip, maritalStatus === o.key && styles.chipActive]}
+              onPress={() => setMaritalStatus(maritalStatus === o.key ? '' : o.key)}
+            >
+              <Text style={[styles.chipText, maritalStatus === o.key && styles.chipTextActive]}>
+                {o.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>STATUS</Text>
+        <View style={styles.chipRow}>
+          {STATUS_OPTIONS.map((o) => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.chip, status === o.key && styles.chipActive]}
+              onPress={() => setStatus(o.key as MemberStatus)}
+            >
+              <Text style={[styles.chipText, status === o.key && styles.chipTextActive]}>
+                {o.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <Text style={styles.sectionDivider}>VIDA NA COMUNIDADE</Text>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>DATA DE BATISMO</Text>
+        <TextInput style={styles.formInput} value={baptismDate}
+          onChangeText={(v) => setBaptismDate(maskDate(v))}
+          placeholder="DD/MM/AAAA" placeholderTextColor={Colors.textMuted} keyboardType="numeric" />
+      </View>
+      <View style={styles.formGroup}>
+        <Text style={styles.formLabel}>MEMBRO DESDE</Text>
+        <TextInput style={styles.formInput} value={memberSince}
+          onChangeText={(v) => setMemberSince(maskDate(v))}
+          placeholder="DD/MM/AAAA" placeholderTextColor={Colors.textMuted} keyboardType="numeric" />
       </View>
 
       <Text style={styles.sectionDivider}>ENDEREÇO</Text>
@@ -432,6 +501,11 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
+  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  chipTextActive: { color: '#fff' },
   carCard: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 0 },
   carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center' },

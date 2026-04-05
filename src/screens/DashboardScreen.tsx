@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
   Image,
   Dimensions,
 } from 'react-native';
@@ -81,10 +82,15 @@ export default function DashboardScreen({ navigation }: any) {
   }, []);
 
   const handleSignOut = () => {
-    Alert.alert('Sair', 'Deseja encerrar a sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => signOut() },
-    ]);
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      if (window.confirm('Deseja encerrar a sessão?')) signOut();
+    } else {
+      Alert.alert('Sair', 'Deseja encerrar a sessão?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sair', style: 'destructive', onPress: () => signOut() },
+      ]);
+    }
   };
 
   return (

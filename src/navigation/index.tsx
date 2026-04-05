@@ -187,11 +187,20 @@ function MainTabs() {
       <Tab.Screen
         name="Celebration"
         component={CelebrationScreen}
-        options={{
+        options={({ navigation }) => ({
           title: '160 Anos',
           headerShown: true,
           ...headerStyle,
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Dashboard')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ marginRight: 8 }}
+            >
+              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
     </Tab.Navigator>
   );
