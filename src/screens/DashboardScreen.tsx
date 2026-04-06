@@ -6,14 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
   Image,
   Dimensions,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
-import { signOut } from '../services/auth';
 import { getMembers } from '../services/members';
 import { getGroups } from '../services/groups';
 
@@ -70,7 +68,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
 
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
+  const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
 
   useEffect(() => {
     getMembers()
@@ -81,17 +79,6 @@ export default function DashboardScreen({ navigation }: any) {
       .catch(() => setGroupCount('—'));
   }, []);
 
-  const handleSignOut = () => {
-    if (Platform.OS === 'web') {
-      // @ts-ignore
-      if (window.confirm('Deseja encerrar a sessão?')) signOut();
-    } else {
-      Alert.alert('Sair', 'Deseja encerrar a sessão?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: () => signOut() },
-      ]);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -113,7 +100,7 @@ export default function DashboardScreen({ navigation }: any) {
                 <Text style={styles.adminBtnIcon}>⚙</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={handleSignOut}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
               <Avatar name={displayName} size={38} index={1} photoURL={appUser?.photoURL} />
             </TouchableOpacity>
           </View>
@@ -197,10 +184,12 @@ export default function DashboardScreen({ navigation }: any) {
                   : Alert.alert(m.label, 'Em breve!')
               }
             >
-              <View style={[styles.moduleIcon, { backgroundColor: m.color }]}>
-                <Text style={styles.moduleEmoji}>{m.icon}</Text>
+              <View style={styles.moduleHeader}>
+                <View style={[styles.moduleIcon, { backgroundColor: m.color }]}>
+                  <Text style={styles.moduleEmoji}>{m.icon}</Text>
+                </View>
+                <Text style={styles.moduleLabel} numberOfLines={2}>{m.label}</Text>
               </View>
-              <Text style={styles.moduleLabel}>{m.label}</Text>
               <Text style={styles.moduleSub}>{m.sub}</Text>
             </TouchableOpacity>
           ))}
@@ -254,11 +243,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
+    gap: 6,
   },
-  moduleIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  moduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  moduleIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   moduleEmoji: { fontSize: 16 },
-  moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  moduleSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
+  moduleSub: { fontSize: 11, color: Colors.textMuted },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   adminBtn: {
     width: 36,
