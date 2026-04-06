@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,6 +33,19 @@ const headerStyle = {
   headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
+
+// Botão de voltar idêntico ao nativo — mesma cor do headerTintColor, mesmo peso
+function BackBtn({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      style={{ paddingRight: Platform.OS === 'ios' ? 6 : 4 }}
+    >
+      <Text style={{ fontSize: 32, lineHeight: 36, color: Colors.headerText, fontWeight: '200', marginTop: -2 }}>‹</Text>
+    </TouchableOpacity>
+  );
+}
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
@@ -80,17 +93,32 @@ function MainTabs({ navigation }: any) {
       <Tab.Screen
         name="Members"
         component={MembersListScreen}
-        options={{ title: 'Membros', headerShown: true, ...headerStyle }}
+        options={({ navigation }) => ({
+          title: 'Membros',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
       />
       <Tab.Screen
         name="SmallGroups"
         component={GroupsListScreen}
-        options={{ title: 'Pequenos Grupos', headerShown: true, ...headerStyle }}
+        options={({ navigation }) => ({
+          title: 'Pequenos Grupos',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
       />
       <Tab.Screen
         name="Celebration"
         component={CelebrationScreen}
-        options={{ title: '160 Anos', headerShown: true, ...headerStyle }}
+        options={({ navigation }) => ({
+          title: '160 Anos',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
       />
     </Tab.Navigator>
   );
