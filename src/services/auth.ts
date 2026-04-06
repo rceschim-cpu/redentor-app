@@ -28,6 +28,7 @@ export async function signOut() {
 }
 
 export async function resetPassword(email: string) {
+  auth.languageCode = 'pt-BR';
   return sendPasswordResetEmail(auth, email);
 }
 
