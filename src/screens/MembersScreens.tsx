@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
@@ -234,10 +235,28 @@ export function MemberDetailScreen({ route, navigation }: any) {
             {member.city && <DetailRow label="Cidade" value={member.city} />}
           </Card>
         )}
-        <PrimaryButton
-          label="Entrar em Contato"
-          onPress={() => Alert.alert('Contato', `Ligar para ${member.phone}`)}
-        />
+        {member.phone ? (
+          <PrimaryButton
+            label="📱 Entrar em Contato via WhatsApp"
+            onPress={() => {
+              const phone = member.phone!.replace(/\D/g, '');
+              const msg = `Olá ${member.name}, tudo bem? Entrando em contato pela Comunidade do Redentor.`;
+              Linking.openURL(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`);
+            }}
+          />
+        ) : (
+          <PrimaryButton
+            label="Entrar em Contato"
+            onPress={() => {
+              if (Platform.OS === 'web') {
+                // @ts-ignore
+                window.alert('Este membro não tem telefone cadastrado.');
+              } else {
+                Alert.alert('Sem telefone', 'Este membro não tem telefone cadastrado.');
+              }
+            }}
+          />
+        )}
         {canEdit && (
           <TouchableOpacity
             style={styles.btnEdit}

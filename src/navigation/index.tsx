@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,6 +13,7 @@ import UsersScreen from '../screens/UsersScreen';
 import AddGroupScreen from '../screens/AddGroupScreen';
 import CultosScreen from '../screens/CultosScreen';
 import ParkingScreen from '../screens/ParkingScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
   MembersListScreen,
@@ -33,6 +34,19 @@ const headerStyle = {
   headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
+
+// Botão voltar no estilo nativo (só seta, sem texto) para telas raiz de tab
+function BackToHome({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      style={{ marginLeft: Platform.OS === 'ios' ? 4 : 0, marginRight: 8 }}
+    >
+      <Text style={{ fontSize: 28, color: Colors.textPrimary, lineHeight: 32, fontWeight: '300' }}>‹</Text>
+    </TouchableOpacity>
+  );
+}
 
 function DashboardNavigator() {
   return (
@@ -57,6 +71,11 @@ function DashboardNavigator() {
         component={ParkingScreen}
         options={{ title: 'Estacionamento' }}
       />
+      <DashboardStack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: 'Meu Perfil' }}
+      />
     </DashboardStack.Navigator>
   );
 }
@@ -70,13 +89,7 @@ function MembersNavigator() {
         options={({ navigation }) => ({
           title: 'Membros',
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.getParent()?.navigate('Dashboard')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ marginRight: 8 }}
-            >
-              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
-            </TouchableOpacity>
+            <BackToHome onPress={() => navigation.getParent()?.navigate('Dashboard')} />
           ),
         })}
       />
@@ -103,13 +116,7 @@ function GroupsNavigator() {
         options={({ navigation }) => ({
           title: 'Pequenos Grupos',
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.getParent()?.navigate('Dashboard')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ marginRight: 8 }}
-            >
-              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
-            </TouchableOpacity>
+            <BackToHome onPress={() => navigation.getParent()?.navigate('Dashboard')} />
           ),
         })}
       />
@@ -192,13 +199,7 @@ function MainTabs() {
           headerShown: true,
           ...headerStyle,
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Dashboard')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ marginRight: 8 }}
-            >
-              <Text style={{ fontSize: 17, color: Colors.primary, fontWeight: '600' }}>← Início</Text>
-            </TouchableOpacity>
+            <BackToHome onPress={() => navigation.navigate('Dashboard')} />
           ),
         })}
       />
