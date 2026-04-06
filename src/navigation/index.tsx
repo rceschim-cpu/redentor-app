@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,120 +24,15 @@ import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const DashboardStack = createNativeStackNavigator();
-const MembersStack = createNativeStackNavigator();
-const GroupsStack = createNativeStackNavigator();
+const AppStack = createNativeStackNavigator();
 
+// Todas as telas compartilham o mesmo stack — garantindo botão nativo em todas
 const headerStyle = {
   headerStyle: { backgroundColor: Colors.headerBg },
   headerTintColor: Colors.headerText as string,
   headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
-
-// Botão voltar no estilo nativo (só seta, sem texto) para telas raiz de tab
-function BackToHome({ onPress }: { onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      style={{ marginLeft: Platform.OS === 'ios' ? 4 : 0, marginRight: 8 }}
-    >
-      <Text style={{ fontSize: 28, color: Colors.textPrimary, lineHeight: 32, fontWeight: '300' }}>‹</Text>
-    </TouchableOpacity>
-  );
-}
-
-function DashboardNavigator() {
-  return (
-    <DashboardStack.Navigator screenOptions={headerStyle}>
-      <DashboardStack.Screen
-        name="DashboardMain"
-        component={DashboardScreen}
-        options={{ headerShown: false }}
-      />
-      <DashboardStack.Screen
-        name="Users"
-        component={UsersScreen}
-        options={{ title: 'Usuários' }}
-      />
-      <DashboardStack.Screen
-        name="Cultos"
-        component={CultosScreen}
-        options={{ title: 'Cultos' }}
-      />
-      <DashboardStack.Screen
-        name="Parking"
-        component={ParkingScreen}
-        options={{ title: 'Estacionamento' }}
-      />
-      <DashboardStack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ title: 'Meu Perfil' }}
-      />
-    </DashboardStack.Navigator>
-  );
-}
-
-function MembersNavigator() {
-  return (
-    <MembersStack.Navigator screenOptions={headerStyle}>
-      <MembersStack.Screen
-        name="MembersList"
-        component={MembersListScreen}
-        options={({ navigation }) => ({
-          title: 'Membros',
-          headerLeft: () => (
-            <BackToHome onPress={() => navigation.getParent()?.navigate('Dashboard')} />
-          ),
-        })}
-      />
-      <MembersStack.Screen
-        name="MemberDetail"
-        component={MemberDetailScreen}
-        options={{ title: '' }}
-      />
-      <MembersStack.Screen
-        name="AddMember"
-        component={AddMemberScreen}
-        options={{ title: 'Novo Membro' }}
-      />
-    </MembersStack.Navigator>
-  );
-}
-
-function GroupsNavigator() {
-  return (
-    <GroupsStack.Navigator screenOptions={headerStyle}>
-      <GroupsStack.Screen
-        name="GroupsList"
-        component={GroupsListScreen}
-        options={({ navigation }) => ({
-          title: 'Pequenos Grupos',
-          headerLeft: () => (
-            <BackToHome onPress={() => navigation.getParent()?.navigate('Dashboard')} />
-          ),
-        })}
-      />
-      <GroupsStack.Screen
-        name="GroupDetail"
-        component={GroupDetailScreen}
-        options={{ title: '' }}
-      />
-      <GroupsStack.Screen
-        name="AddGroup"
-        component={AddGroupScreen}
-        options={{ title: 'Novo Grupo' }}
-      />
-      <GroupsStack.Screen
-        name="GroupMemberRequests"
-        component={GroupMemberRequestsScreen}
-        options={{ title: 'Solicitações' }}
-      />
-    </GroupsStack.Navigator>
-  );
-}
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
@@ -153,7 +48,8 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   );
 }
 
-function MainTabs() {
+// Tab bar como overlay — sempre visível nas telas raiz
+function MainTabs({ navigation }: any) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -178,32 +74,51 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={DashboardNavigator}
-        options={{ title: 'Início', headerShown: false }}
+        component={DashboardScreen}
+        options={{ title: 'Início' }}
       />
       <Tab.Screen
         name="Members"
-        component={MembersNavigator}
-        options={{ title: 'Membros' }}
+        component={MembersListScreen}
+        options={{ title: 'Membros', headerShown: true, ...headerStyle }}
       />
       <Tab.Screen
         name="SmallGroups"
-        component={GroupsNavigator}
-        options={{ title: 'Pequenos Grupos' }}
+        component={GroupsListScreen}
+        options={{ title: 'Pequenos Grupos', headerShown: true, ...headerStyle }}
       />
       <Tab.Screen
         name="Celebration"
         component={CelebrationScreen}
-        options={({ navigation }) => ({
-          title: '160 Anos',
-          headerShown: true,
-          ...headerStyle,
-          headerLeft: () => (
-            <BackToHome onPress={() => navigation.navigate('Dashboard')} />
-          ),
-        })}
+        options={{ title: '160 Anos', headerShown: true, ...headerStyle }}
       />
     </Tab.Navigator>
+  );
+}
+
+// Stack principal — todas as telas empilhadas sobre as tabs
+function AppNavigator() {
+  return (
+    <AppStack.Navigator screenOptions={headerStyle}>
+      {/* Tab root — sem header próprio */}
+      <AppStack.Screen
+        name="Tabs"
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      {/* Membros */}
+      <AppStack.Screen name="MemberDetail" component={MemberDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddMember" component={AddMemberScreen} options={{ title: 'Novo Membro' }} />
+      {/* Grupos */}
+      <AppStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
+      <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
+      {/* Outros */}
+      <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />
+      <AppStack.Screen name="Parking" component={ParkingScreen} options={{ title: 'Estacionamento' }} />
+      <AppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />
+      <AppStack.Screen name="Users" component={UsersScreen} options={{ title: 'Usuários' }} />
+    </AppStack.Navigator>
   );
 }
 
@@ -225,7 +140,7 @@ export default function RootNavigator() {
       ) : !appUser?.profileComplete ? (
         <RootStack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
       ) : (
-        <RootStack.Screen name="Main" component={MainTabs} />
+        <RootStack.Screen name="Main" component={AppNavigator} />
       )}
     </RootStack.Navigator>
   );
