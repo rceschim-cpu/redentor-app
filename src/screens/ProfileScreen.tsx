@@ -111,7 +111,7 @@ export default function ProfileScreen({ navigation }: any) {
     if (!user || !appUser) return;
     setRequestingGroup(group.id);
     try {
-      await requestToJoin(group.id, user.uid, appUser.name);
+      await requestToJoin(group.id, user.uid, appUser.name, appUser.email ?? user.email ?? '');
       setShowGroupPicker(false);
       showAlert('Solicitação enviada!', `Aguarde a aprovação do líder do grupo "${group.name}".`);
     } catch (err: any) {
