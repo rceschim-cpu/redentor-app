@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -260,7 +260,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
         {canEdit && (
           <TouchableOpacity
             style={styles.btnEdit}
-            onPress={() => navigation.navigate('AddMember', { member })}
+            onPress={() => navigation.navigate('AddMember', { memberId: member.id })}
           >
             <Text style={styles.btnEditText}>Editar membro</Text>
           </TouchableOpacity>
@@ -293,22 +293,45 @@ const STATUS_OPTIONS = [
 ];
 
 export function AddMemberScreen({ navigation, route }: any) {
-  const editing: Member | undefined = route.params?.member;
-  const [name, setName] = useState(editing?.name ?? '');
-  const [phone, setPhone] = useState(editing?.phone ?? '');
-  const [birthDate, setBirthDate] = useState(editing?.birthDate ?? '');
-  const [email, setEmail] = useState(editing?.email ?? '');
-  const [maritalStatus, setMaritalStatus] = useState(editing?.maritalStatus ?? '');
-  const [status, setStatus] = useState<MemberStatus>(editing?.status ?? 'visitante');
-  const [baptismDate, setBaptismDate] = useState(editing?.baptismDate ?? '');
-  const [memberSince, setMemberSince] = useState(editing?.memberSince ?? '');
-  const [street, setStreet] = useState(editing?.street ?? '');
-  const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
-  const [city, setCity] = useState(editing?.city ?? 'Curitiba');
-  const [cars, setCars] = useState<Array<{ plate: string; model: string; color: string }>>(
-    editing?.cars?.map((c) => ({ plate: c.plate, model: c.model ?? '', color: c.color ?? '' })) ?? []
-  );
+  const editingId: string | undefined = route.params?.memberId;
+  const isEditing = !!editingId;
+
+  const [loadingEdit, setLoadingEdit] = useState(isEditing);
+  const [editingMemberId, setEditingMemberId] = useState<string | undefined>(editingId);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [email, setEmail] = useState('');
+  const [maritalStatus, setMaritalStatus] = useState('');
+  const [status, setStatus] = useState<MemberStatus>('visitante');
+  const [baptismDate, setBaptismDate] = useState('');
+  const [memberSince, setMemberSince] = useState('');
+  const [street, setStreet] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [cars, setCars] = useState<Array<{ plate: string; model: string; color: string }>>([]);
   const [saving, setSaving] = useState(false);
+
+  // Carrega dados do Firestore ao editar — evita problemas de serialização de params
+  useEffect(() => {
+    if (!editingId) return;
+    navigation.setOptions({ title: 'Editar Membro' });
+    getMember(editingId).then((m) => {
+      if (!m) return;
+      setName(m.name ?? '');
+      setPhone(m.phone ?? '');
+      setBirthDate(m.birthDate ?? '');
+      setEmail(m.email ?? '');
+      setMaritalStatus(m.maritalStatus ?? '');
+      setStatus(m.status ?? 'visitante');
+      setBaptismDate(m.baptismDate ?? '');
+      setMemberSince(m.memberSince ?? '');
+      setStreet(m.street ?? '');
+      setNeighborhood(m.neighborhood ?? '');
+      setCity(m.city ?? '');
+      setCars(m.cars?.map((c) => ({ plate: c.plate, model: c.model ?? '', color: c.color ?? '' })) ?? []);
+    }).finally(() => setLoadingEdit(false));
+  }, [editingId]);
 
   const addCar = () => setCars((prev) => [...prev, { plate: '', model: '', color: '' }]);
   const removeCar = (i: number) => setCars((prev) => prev.filter((_, idx) => idx !== i));
@@ -339,8 +362,8 @@ export function AddMemberScreen({ navigation, route }: any) {
         cars: cleanCars,
         carPlates,
       };
-      if (editing) {
-        await updateMember(editing.id, data);
+      if (editingMemberId) {
+        await updateMember(editingMemberId, data);
       } else {
         await addMember(data as any);
       }
@@ -357,6 +380,14 @@ export function AddMemberScreen({ navigation, route }: any) {
       setSaving(false);
     }
   };
+
+  if (loadingEdit) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.formContent}>
@@ -483,7 +514,7 @@ export function AddMemberScreen({ navigation, route }: any) {
         <Text style={styles.addCarBtnText}>+ Adicionar veículo</Text>
       </TouchableOpacity>
 
-      <PrimaryButton label={saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Cadastrar membro'} onPress={handleSave} />
+      <PrimaryButton label={saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Cadastrar membro'} onPress={handleSave} />
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 12, alignItems: 'center' }}>
         <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>Cancelar</Text>
       </TouchableOpacity>
