@@ -7,13 +7,13 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Image,
   ScrollView,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { signIn, signUp, resetPassword, signInWithGoogle, translateAuthError } from '../services/auth';
+import { showAlert } from '../utils/alert';
 
 type Mode = 'login' | 'register';
 
@@ -25,15 +25,7 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const showError = (title: string, msg?: string) => {
-    const full = msg ? `${title}\n${msg}` : title;
-    if (Platform.OS === 'web') {
-      // @ts-ignore
-      window.alert(full);
-    } else {
-      Alert.alert(title, msg);
-    }
-  };
+  const showError = showAlert;
 
   const switchMode = (next: Mode) => {
     setMode(next);

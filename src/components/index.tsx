@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Colors, Radius, getAvatarColor } from '../theme';
 
 // ─── Avatar ────────────────────────────────────────────────────────────────
@@ -107,6 +107,29 @@ export const DetailRow = ({ label, value, accent }: DetailRowProps) => (
   </View>
 );
 
+// ─── ChipGroup ─────────────────────────────────────────────────────────────
+interface ChipGroupProps {
+  options: ReadonlyArray<{ key: string; label: string }>;
+  value: string;
+  onChange: (v: string) => void;
+  style?: ViewStyle;
+}
+export const ChipGroup = ({ options, value, onChange, style }: ChipGroupProps) => (
+  <View style={[styles.chipRow, style]}>
+    {options.map((o) => (
+      <TouchableOpacity
+        key={o.key}
+        style={[styles.chip, value === o.key && styles.chipActive]}
+        onPress={() => onChange(value === o.key ? '' : o.key)}
+      >
+        <Text style={[styles.chipText, value === o.key && styles.chipTextActive]}>
+          {o.label}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
+
 // ─── Card ──────────────────────────────────────────────────────────────────
 export const Card = ({
   children,
@@ -172,4 +195,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  chipTextActive: { color: '#fff' },
 });

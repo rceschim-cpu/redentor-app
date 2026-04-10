@@ -13,12 +13,14 @@ import {
   Linking,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
+import { Avatar, StatusBadge, Card, ChipGroup, DetailRow, PrimaryButton } from '../components';
 import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
+import { showAlert } from '../utils/alert';
+import { MARITAL_OPTIONS, STATUS_OPTIONS, MARITAL_LABEL } from '../constants/memberOptions';
 import { useFocusEffect } from '@react-navigation/native';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
@@ -144,13 +146,6 @@ export function MemberDetailScreen({ route, navigation }: any) {
     }, [memberId])
   );
 
-  const MARITAL_MAP: Record<string, string> = {
-    solteiro: 'Solteiro(a)',
-    casado: 'Casado(a)',
-    divorciado: 'Divorciado(a)',
-    viuvo: 'Viúvo(a)',
-  };
-
   const handleDelete = () => {
     const doDelete = async () => {
       try {
@@ -207,7 +202,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
           <DetailRow label="Telefone" value={member.phone} />
           <DetailRow label="E-mail" value={member.email} />
           <DetailRow label="Nascimento" value={member.birthDate} />
-          <DetailRow label="Estado civil" value={MARITAL_MAP[member.maritalStatus ?? ''] ?? '—'} />
+          <DetailRow label="Estado civil" value={MARITAL_LABEL[member.maritalStatus ?? ''] ?? '—'} />
         </Card>
         <Card style={{ marginBottom: 10 }}>
           <Text style={styles.cardTitle}>VIDA NA COMUNIDADE</Text>
@@ -280,24 +275,12 @@ export function MemberDetailScreen({ route, navigation }: any) {
 }
 
 // ─── Cadastro / Edição de Membro ─────────────────────────────────────────────
-const MARITAL_OPTIONS = [
-  { key: 'solteiro', label: 'Solteiro(a)' },
-  { key: 'casado', label: 'Casado(a)' },
-  { key: 'divorciado', label: 'Divorciado(a)' },
-  { key: 'viuvo', label: 'Viúvo(a)' },
-];
-const STATUS_OPTIONS = [
-  { key: 'visitante', label: 'Visitante' },
-  { key: 'ativo', label: 'Ativo' },
-  { key: 'inativo', label: 'Inativo' },
-];
 
 export function AddMemberScreen({ navigation, route }: any) {
   const editingId: string | undefined = route.params?.memberId;
   const isEditing = !!editingId;
 
   const [loadingEdit, setLoadingEdit] = useState(isEditing);
-  const [editingMemberId, setEditingMemberId] = useState<string | undefined>(editingId);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
@@ -340,7 +323,7 @@ export function AddMemberScreen({ navigation, route }: any) {
 
   const handleSave = async () => {
     if (saving) return;
-    if (!name.trim()) { Alert.alert('Nome obrigatório'); return; }
+    if (!name.trim()) { showAlert('Nome obrigatório'); return; }
     setSaving(true);
     try {
       const cleanCars = cars
@@ -362,20 +345,14 @@ export function AddMemberScreen({ navigation, route }: any) {
         cars: cleanCars,
         carPlates,
       };
-      if (editingMemberId) {
-        await updateMember(editingMemberId, data);
+      if (editingId) {
+        await updateMember(editingId, data);
       } else {
         await addMember(data as any);
       }
       navigation.goBack();
     } catch (err: any) {
-      const msg = err?.message ?? 'Não foi possível salvar. Tente novamente.';
-      if (Platform.OS === 'web') {
-        // @ts-ignore
-        window.alert(`Erro: ${msg}`);
-      } else {
-        Alert.alert('Erro', msg);
-      }
+      showAlert('Erro', err?.message ?? 'Não foi possível salvar. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -417,36 +394,16 @@ export function AddMemberScreen({ navigation, route }: any) {
 
       <View style={styles.formGroup}>
         <Text style={styles.formLabel}>ESTADO CIVIL</Text>
-        <View style={styles.chipRow}>
-          {MARITAL_OPTIONS.map((o) => (
-            <TouchableOpacity
-              key={o.key}
-              style={[styles.chip, maritalStatus === o.key && styles.chipActive]}
-              onPress={() => setMaritalStatus(maritalStatus === o.key ? '' : o.key)}
-            >
-              <Text style={[styles.chipText, maritalStatus === o.key && styles.chipTextActive]}>
-                {o.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ChipGroup options={MARITAL_OPTIONS} value={maritalStatus} onChange={setMaritalStatus} />
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.formLabel}>STATUS</Text>
-        <View style={styles.chipRow}>
-          {STATUS_OPTIONS.map((o) => (
-            <TouchableOpacity
-              key={o.key}
-              style={[styles.chip, status === o.key && styles.chipActive]}
-              onPress={() => setStatus(o.key as MemberStatus)}
-            >
-              <Text style={[styles.chipText, status === o.key && styles.chipTextActive]}>
-                {o.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ChipGroup
+          options={STATUS_OPTIONS}
+          value={status}
+          onChange={(v) => v && setStatus(v as MemberStatus)}
+        />
       </View>
 
       <Text style={styles.sectionDivider}>VIDA NA COMUNIDADE</Text>
@@ -489,7 +446,7 @@ export function AddMemberScreen({ navigation, route }: any) {
           <View style={styles.carHeader}>
             <Text style={styles.formLabel}>VEÍCULO {i + 1}</Text>
             <TouchableOpacity onPress={() => removeCar(i)}>
-              <Text style={{ color: '#C0392B', fontSize: 13, fontWeight: '600' }}>Remover</Text>
+              <Text style={styles.removeText}>Remover</Text>
             </TouchableOpacity>
           </View>
           <TextInput
@@ -551,11 +508,7 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  chipTextActive: { color: '#fff' },
+  removeText: { color: Colors.danger, fontSize: 13, fontWeight: '600' },
   carCard: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 0 },
   carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center' },

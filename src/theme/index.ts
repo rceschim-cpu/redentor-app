@@ -27,6 +27,9 @@ export const Colors = {
   textMuted: '#888884',
   textOnDark: '#FFFFFF',
 
+  // Ações destrutivas
+  danger: '#C0392B',
+
   // Status
   activeText: '#3B7A46',
   activeBg: '#E8F4EA',

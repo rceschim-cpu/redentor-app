@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar, Card, PrimaryButton } from '../components';
+import { Avatar, Card, ChipGroup, PrimaryButton } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from '../services/auth';
 import { updateUserProfile } from '../services/userProfile';
@@ -20,30 +20,9 @@ import { getMember, updateMember } from '../services/members';
 import { getGroups } from '../services/groups';
 import { requestToJoin } from '../services/memberships';
 import { maskPhone, maskDate } from '../utils/masks';
+import { showAlert } from '../utils/alert';
+import { MARITAL_OPTIONS, STATUS_OPTIONS, MARITAL_LABEL } from '../constants/memberOptions';
 import { Group, Member, MemberStatus } from '../types';
-
-const showAlert = (title: string, msg?: string) => {
-  const full = msg ? `${title}\n${msg}` : title;
-  if (Platform.OS === 'web') {
-    // @ts-ignore
-    window.alert(full);
-  } else {
-    Alert.alert(title, msg);
-  }
-};
-
-const MARITAL_OPTIONS = [
-  { key: 'solteiro', label: 'Solteiro(a)' },
-  { key: 'casado', label: 'Casado(a)' },
-  { key: 'divorciado', label: 'Divorciado(a)' },
-  { key: 'viuvo', label: 'Viúvo(a)' },
-];
-
-const STATUS_OPTIONS = [
-  { key: 'visitante', label: 'Visitante' },
-  { key: 'ativo', label: 'Ativo' },
-  { key: 'inativo', label: 'Inativo' },
-];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -59,32 +38,6 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value || '—'}</Text>
-    </View>
-  );
-}
-
-function ChipGroup({
-  options,
-  value,
-  onChange,
-}: {
-  options: { key: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <View style={styles.chipRow}>
-      {options.map((o) => (
-        <TouchableOpacity
-          key={o.key}
-          style={[styles.chip, value === o.key && styles.chipActive]}
-          onPress={() => onChange(value === o.key ? '' : o.key)}
-        >
-          <Text style={[styles.chipText, value === o.key && styles.chipTextActive]}>
-            {o.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
     </View>
   );
 }
@@ -218,11 +171,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const MARITAL_LABELS: Record<string, string> = {
-    solteiro: 'Solteiro(a)', casado: 'Casado(a)',
-    divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)',
-  };
-
   if (loadingData) {
     return (
       <View style={styles.center}>
@@ -283,7 +231,7 @@ export default function ProfileScreen() {
             <InfoRow label="Telefone" value={phone} />
             <InfoRow label="E-mail" value={email} />
             <InfoRow label="Nascimento" value={birthDate} />
-            <InfoRow label="Estado civil" value={MARITAL_LABELS[maritalStatus]} />
+            <InfoRow label="Estado civil" value={MARITAL_LABEL[maritalStatus]} />
           </>
         )}
       </Card>
@@ -359,7 +307,7 @@ export default function ProfileScreen() {
                 <View style={styles.carHeader}>
                   <Text style={styles.label}>VEÍCULO {i + 1}</Text>
                   <TouchableOpacity onPress={() => removeCar(i)}>
-                    <Text style={{ color: '#C0392B', fontSize: 13, fontWeight: '600' }}>Remover</Text>
+                    <Text style={styles.removeText}>Remover</Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput style={styles.input} value={car.plate}
@@ -494,11 +442,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
   },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  chipTextActive: { color: '#fff' },
+  removeText: { color: Colors.danger, fontSize: 13, fontWeight: '600' },
   carCard: { backgroundColor: Colors.background, borderRadius: Radius.md, padding: 12, borderWidth: 1, borderColor: Colors.border, marginBottom: 10 },
   carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center', marginTop: 4 },

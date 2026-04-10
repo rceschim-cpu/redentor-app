@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { getUserProfile, createUserProfile, updateUserProfile } from '../services/userProfile';
@@ -69,9 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const refreshAppUser = async () => {
+  const refreshAppUser = useCallback(async () => {
     if (user) await loadAppUser(user);
-  };
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, appUser, loading, refreshAppUser }}>

@@ -47,16 +47,17 @@ function BackBtn({ onPress }: { onPress: () => void }) {
   );
 }
 
+const TAB_ICONS: Record<string, string> = {
+  Dashboard: '⌂',
+  Members: '●●',
+  SmallGroups: '▲',
+  Celebration: '✦',
+};
+
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Dashboard: '⌂',
-    Members: '●●',
-    SmallGroups: '▲',
-    Celebration: '✦',
-  };
   return (
     <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4, color: Colors.primary }}>
-      {icons[name]}
+      {TAB_ICONS[name]}
     </Text>
   );
 }
