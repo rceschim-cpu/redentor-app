@@ -5,7 +5,7 @@
 //  3. Cole a chave abaixo
 
 const CALENDAR_ID = 'ugfvdrt2k1g99s4ltlujafm140@group.calendar.google.com';
-const API_KEY = 'COLE_SUA_API_KEY_AQUI';
+const API_KEY = 'AIzaSyDjtVZ5YxYmTFdBVfbAOfLTQBc4g6Py4JY';
 
 const BASE = 'https://www.googleapis.com/calendar/v3/calendars';
 
