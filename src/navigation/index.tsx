@@ -14,6 +14,7 @@ import AddGroupScreen from '../screens/AddGroupScreen';
 import CultosScreen from '../screens/CultosScreen';
 import ParkingScreen from '../screens/ParkingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EventsScreen from '../screens/EventsScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import {
   MembersListScreen,
@@ -143,6 +144,7 @@ function AppNavigator() {
       <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
       <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
       {/* Outros */}
+      <AppStack.Screen name="Events" component={EventsScreen} options={{ title: 'Agenda' }} />
       <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />
       <AppStack.Screen name="Parking" component={ParkingScreen} options={{ title: 'Estacionamento' }} />
       <AppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />

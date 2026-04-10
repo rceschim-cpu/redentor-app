@@ -33,7 +33,7 @@ const BANNERS = [
     icon: '📅',
     title: 'Agenda da Semana',
     sub: 'Confira os próximos eventos',
-    screen: null,
+    screen: 'Events',
   },
   {
     id: '3',
@@ -56,7 +56,7 @@ const BANNERS = [
 const MODULES = [
   { icon: '👥', label: 'Membros', sub: 'Cadastro geral', color: '#EDE9F7', screen: 'Members' },
   { icon: '🏘️', label: 'Pequenos Grupos', sub: 'Grupos ativos', color: '#E8F4EA', screen: 'SmallGroups' },
-  { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: null },
+  { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: 'Events' },
   { icon: '▶️', label: 'Cultos', sub: 'Links ao vivo', color: '#FDF0E8', screen: 'Cultos' },
   { icon: '🅿️', label: 'Estacionamento', sub: 'Gestão de vagas', color: '#F0F0EE', screen: 'Parking' },
 ];
