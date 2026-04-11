@@ -14,6 +14,7 @@ import { View } from 'react-native';
 
 import RootNavigator from './src/navigation';
 import { AuthProvider } from './src/context/AuthContext';
+import { FontScaleProvider } from './src/context/FontScaleContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,12 +36,14 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <NavigationContainer>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </NavigationContainer>
-      </View>
+      <FontScaleProvider>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+          <NavigationContainer>
+            <StatusBar style="light" />
+            <RootNavigator />
+          </NavigationContainer>
+        </View>
+      </FontScaleProvider>
     </AuthProvider>
   );
 }

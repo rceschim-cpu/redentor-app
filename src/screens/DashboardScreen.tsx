@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar } from '../components';
+import { AppText as Text, Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { getMembers } from '../services/members';
 import { getGroups } from '../services/groups';
@@ -59,6 +59,7 @@ const MODULES = [
   { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: 'Events' },
   { icon: '▶️', label: 'Cultos', sub: 'Links ao vivo', color: '#FDF0E8', screen: 'Cultos' },
   { icon: '🅿️', label: 'Estacionamento', sub: 'Gestão de vagas', color: '#F0F0EE', screen: 'Parking' },
+  { icon: '⚙️', label: 'Configurações', sub: 'Tamanho da letra', color: '#F0EFED', screen: 'Settings' },
 ];
 
 export default function DashboardScreen({ navigation }: any) {

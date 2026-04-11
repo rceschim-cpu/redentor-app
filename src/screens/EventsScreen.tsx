@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Card } from '../components';
+import { AppText as Text, Card } from '../components';
 import { getUpcomingEvents, CalendarEvent } from '../services/calendar';
 
 // ─── Helpers de data ─────────────────────────────────────────────────────────

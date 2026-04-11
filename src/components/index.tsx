@@ -1,6 +1,16 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ViewStyle, TextProps } from 'react-native';
 import { Colors, Radius, getAvatarColor } from '../theme';
+import { useFontScale } from '../context/FontScaleContext';
+
+// ─── AppText — Text com scale de acessibilidade aplicado ───────────────────
+export function AppText({ style, ...props }: TextProps) {
+  const { scale } = useFontScale();
+  if (scale === 1) return <Text style={style} {...props} />;
+  const flat = StyleSheet.flatten(style) ?? {};
+  const scaled = flat.fontSize ? { ...flat, fontSize: Math.round(flat.fontSize * scale) } : flat;
+  return <Text style={scaled} {...props} />;
+}
 
 // ─── Avatar ────────────────────────────────────────────────────────────────
 interface AvatarProps {

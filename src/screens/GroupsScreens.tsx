@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar, Card, DetailRow, PrimaryButton } from '../components';
+import { AppText as Text, Avatar, Card, DetailRow, PrimaryButton } from '../components';
 import { Group, GroupMembership } from '../types';
 import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/groups';
 import { getMemberships, getPendingRequests, getUserMembership, requestToJoin } from '../services/memberships';

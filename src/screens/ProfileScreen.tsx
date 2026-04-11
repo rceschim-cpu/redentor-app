@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar, Card, ChipGroup, PrimaryButton } from '../components';
+import { AppText as Text, Avatar, Card, ChipGroup, PrimaryButton } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from '../services/auth';
 import { updateUserProfile } from '../services/userProfile';

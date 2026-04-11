@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
+  Text as RNText,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -13,7 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { Avatar, StatusBadge, Card, ChipGroup, DetailRow, PrimaryButton } from '../components';
+import { AppText as Text, Avatar, StatusBadge, Card, ChipGroup, DetailRow, PrimaryButton } from '../components';
 import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
