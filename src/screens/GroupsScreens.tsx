@@ -51,11 +51,26 @@ function formatFileSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ID global para materiais de pequenos grupos (não vinculados a um grupo específico)
+const PG_MATERIALS_ID = 'pg-geral';
+
 // ─── Lista de Pequenos Grupos ──────────────────────────────────────────────────
 export function GroupsListScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'grupos' | 'materiais'>('grupos');
+
+  // ── Materials state
+  const [materials, setMaterials] = useState<GroupMaterial[]>([]);
+  const [materialsLoaded, setMaterialsLoaded] = useState(false);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingTitle, setPendingTitle] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const canCreate = appUser ? canCreateGroup(appUser.role) : false;
+  const canUploadMaterials = appUser?.role === 'pastor' || appUser?.role === 'administrador';
 
   useFocusEffect(
     useCallback(() => {
@@ -67,90 +82,219 @@ export function GroupsListScreen({ navigation }: any) {
     }, [])
   );
 
-  const canCreate = appUser ? canCreateGroup(appUser.role) : false;
+  const handleMaterialsTab = () => {
+    setActiveTab('materiais');
+    if (!materialsLoaded && !materialsLoading) {
+      setMaterialsLoading(true);
+      getMaterials(PG_MATERIALS_ID)
+        .then((mats) => { setMaterials(mats); setMaterialsLoaded(true); })
+        .catch(() => showAlert('Erro', 'Não foi possível carregar os materiais.'))
+        .finally(() => setMaterialsLoading(false));
+    }
+  };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.primary} />
-      </View>
-    );
-  }
+  const pickFile = () => {
+    if (Platform.OS !== 'web') {
+      showAlert('Upload', 'O upload de arquivos está disponível apenas pelo app web.');
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp3,.mp4,.txt,.zip';
+    input.onchange = (e: any) => {
+      const file: File | undefined = e.target?.files?.[0];
+      if (file) {
+        setPendingFile(file);
+        setPendingTitle(file.name.replace(/\.[^/.]+$/, ''));
+      }
+    };
+    input.click();
+  };
+
+  const cancelPendingUpload = () => { setPendingFile(null); setPendingTitle(''); };
+
+  const handleUpload = async () => {
+    if (!pendingFile || !appUser) return;
+    setUploading(true);
+    try {
+      const mat = await uploadMaterial(PG_MATERIALS_ID, pendingFile, pendingTitle, '', appUser.uid, appUser.name);
+      setMaterials((prev) => [mat, ...prev]);
+      cancelPendingUpload();
+    } catch (err: any) {
+      showAlert('Erro no upload', err?.message ?? 'Não foi possível enviar o arquivo.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteMaterial = (mat: GroupMaterial) => {
+    showConfirm('Excluir material', `Excluir "${mat.title}"? Esta ação não pode ser desfeita.`, async () => {
+      try {
+        await deleteMaterial(mat.id, mat.fileURL);
+        setMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+      } catch {
+        showAlert('Erro', 'Não foi possível excluir o material.');
+      }
+    }, 'Excluir');
+  };
+
+  const openMaterial = (url: string) => {
+    if (Platform.OS === 'web') { (window as any).open(url, '_blank'); }
+    else { Linking.openURL(url).catch(() => showAlert('Erro', 'Não foi possível abrir o arquivo.')); }
+  };
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={groups}
-        keyExtractor={(g) => g.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyIcon}>🏘️</Text>
-            <Text style={styles.emptyText}>Nenhum grupo cadastrado ainda.</Text>
-          </View>
-        }
-        renderItem={({ item: group }) => {
-          const hasPending = (group.pendingCount ?? 0) > 0;
-          const showPending =
-            appUser &&
-            canViewRequests(appUser.role, user?.uid ?? '', group.leaderId) &&
-            hasPending;
-
-          return (
-            <TouchableOpacity
-              style={styles.groupCard}
-              activeOpacity={0.75}
-              onPress={() =>
-                navigation.navigate('GroupDetail', { groupId: group.id })
-              }
-            >
-              <View style={styles.groupTop}>
-                <View style={styles.groupIconWrap}>
-                  <Text style={styles.groupEmoji}>{group.icon ?? '🏠'}</Text>
-                </View>
-                <View style={styles.groupMeta}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  <Text style={styles.groupLeader}>
-                    Líder: {group.leaderName ?? '—'}
-                  </Text>
-                </View>
-                {showPending ? (
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>{group.pendingCount}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <View style={styles.pillRow}>
-                <View style={styles.pillBlue}>
-                  <Text style={styles.pillBlueText}>
-                    {group.memberCount ?? 0} membros
-                  </Text>
-                </View>
-                {group.meetingDay ? (
-                  <View style={styles.pillGray}>
-                    <Text style={styles.pillGrayText}>
-                      {group.meetingDay}{group.meetingTime ? ` · ${group.meetingTime}` : ''}
-                    </Text>
-                  </View>
-                ) : null}
-                <View style={group.status === 'ativo' ? styles.pillGreen : styles.pillOrange}>
-                  <Text style={group.status === 'ativo' ? styles.pillGreenText : styles.pillOrangeText}>
-                    {group.status === 'ativo' ? 'Ativo' : 'Em formação'}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      {canCreate && (
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
         <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('AddGroup')}
+          style={[styles.tab, activeTab === 'grupos' && styles.tabActive]}
+          onPress={() => setActiveTab('grupos')}
         >
-          <Text style={styles.fabText}>＋</Text>
+          <RNText style={[styles.tabText, activeTab === 'grupos' && styles.tabTextActive]}>Grupos</RNText>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'materiais' && styles.tabActive]}
+          onPress={handleMaterialsTab}
+        >
+          <RNText style={[styles.tabText, activeTab === 'materiais' && styles.tabTextActive]}>Materiais</RNText>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Tab: Grupos ── */}
+      {activeTab === 'grupos' && (
+        <>
+          {loading ? (
+            <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>
+          ) : (
+            <FlatList
+              data={groups}
+              keyExtractor={(g) => g.id}
+              contentContainerStyle={styles.list}
+              ListEmptyComponent={
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptyIcon}>🏘️</Text>
+                  <Text style={styles.emptyText}>Nenhum grupo cadastrado ainda.</Text>
+                </View>
+              }
+              renderItem={({ item: group }) => {
+                const hasPending = (group.pendingCount ?? 0) > 0;
+                const showPending = appUser && canViewRequests(appUser.role, user?.uid ?? '', group.leaderId) && hasPending;
+                return (
+                  <TouchableOpacity
+                    style={styles.groupCard}
+                    activeOpacity={0.75}
+                    onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+                  >
+                    <View style={styles.groupTop}>
+                      <View style={styles.groupIconWrap}>
+                        <Text style={styles.groupEmoji}>{group.icon ?? '🏠'}</Text>
+                      </View>
+                      <View style={styles.groupMeta}>
+                        <Text style={styles.groupName}>{group.name}</Text>
+                        <Text style={styles.groupLeader}>Líder: {group.leaderName ?? '—'}</Text>
+                      </View>
+                      {showPending ? (
+                        <View style={styles.pendingBadge}>
+                          <Text style={styles.pendingBadgeText}>{group.pendingCount}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.pillRow}>
+                      <View style={styles.pillBlue}>
+                        <Text style={styles.pillBlueText}>{group.memberCount ?? 0} membros</Text>
+                      </View>
+                      {group.meetingDay ? (
+                        <View style={styles.pillGray}>
+                          <Text style={styles.pillGrayText}>{group.meetingDay}{group.meetingTime ? ` · ${group.meetingTime}` : ''}</Text>
+                        </View>
+                      ) : null}
+                      <View style={group.status === 'ativo' ? styles.pillGreen : styles.pillOrange}>
+                        <Text style={group.status === 'ativo' ? styles.pillGreenText : styles.pillOrangeText}>
+                          {group.status === 'ativo' ? 'Ativo' : 'Em formação'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
+          {canCreate && (
+            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddGroup')}>
+              <Text style={styles.fabText}>＋</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Materiais ── */}
+      {activeTab === 'materiais' && (
+        <ScrollView style={styles.detailBody} showsVerticalScrollIndicator={false}>
+          {canUploadMaterials && !pendingFile && (
+            <TouchableOpacity style={styles.uploadBtn} onPress={pickFile}>
+              <RNText style={styles.uploadBtnText}>＋ Adicionar material</RNText>
+            </TouchableOpacity>
+          )}
+          {pendingFile && (
+            <View style={styles.pendingUploadCard}>
+              <RNText style={styles.pendingFileName} numberOfLines={1}>
+                {getFileIcon(pendingFile.type)}  {pendingFile.name}
+                {pendingFile.size ? `  ·  ${formatFileSize(pendingFile.size)}` : ''}
+              </RNText>
+              <TextInput
+                style={styles.pendingTitleInput}
+                value={pendingTitle}
+                onChangeText={setPendingTitle}
+                placeholder="Título do material"
+                placeholderTextColor={Colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.pendingBtns}>
+                <TouchableOpacity style={[styles.pendingBtn, styles.pendingBtnCancel]} onPress={cancelPendingUpload} disabled={uploading}>
+                  <RNText style={styles.pendingBtnCancelText}>Cancelar</RNText>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.pendingBtn, styles.pendingBtnUpload, uploading && { opacity: 0.6 }]} onPress={handleUpload} disabled={uploading}>
+                  <RNText style={styles.pendingBtnUploadText}>{uploading ? 'Enviando…' : 'Enviar'}</RNText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {materialsLoading ? (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 28 }} />
+          ) : materials.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>📁</Text>
+              <Text style={styles.emptyText}>
+                {canUploadMaterials ? 'Nenhum material publicado ainda.\nClique em "Adicionar material" para começar.' : 'Nenhum material disponível.'}
+              </Text>
+            </View>
+          ) : (
+            materials.map((mat) => (
+              <View key={mat.id} style={styles.materialCard}>
+                <RNText style={styles.materialIcon}>{getFileIcon(mat.fileType)}</RNText>
+                <View style={styles.materialInfo}>
+                  <RNText style={styles.materialTitle} numberOfLines={2}>{mat.title}</RNText>
+                  <RNText style={styles.materialMeta}>
+                    {mat.uploaderName} · {formatDate(mat.uploadedAt)}
+                    {mat.fileSize ? `  ·  ${formatFileSize(mat.fileSize)}` : ''}
+                  </RNText>
+                </View>
+                <View style={styles.materialActions}>
+                  <TouchableOpacity style={styles.materialActionBtn} onPress={() => openMaterial(mat.fileURL)}>
+                    <RNText style={styles.materialDownloadIcon}>⬇</RNText>
+                  </TouchableOpacity>
+                  {canUploadMaterials && (
+                    <TouchableOpacity style={styles.materialActionBtn} onPress={() => handleDeleteMaterial(mat)}>
+                      <RNText style={styles.materialDeleteIcon}>✕</RNText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+          <View style={{ height: 30 }} />
+        </ScrollView>
       )}
     </View>
   );
@@ -173,16 +317,6 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [transferring, setTransferring] = useState(false);
 
-  // ── Tab state
-  const [activeTab, setActiveTab] = useState<'grupo' | 'materiais'>('grupo');
-
-  // ── Materials state
-  const [materials, setMaterials] = useState<GroupMaterial[]>([]);
-  const [materialsLoaded, setMaterialsLoaded] = useState(false);
-  const [materialsLoading, setMaterialsLoading] = useState(false);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingTitle, setPendingTitle] = useState('');
-  const [uploading, setUploading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -214,83 +348,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
     }, [groupId, user])
   );
 
-  // ── Load materials when the tab is first opened
-  const handleMaterialsTab = () => {
-    setActiveTab('materiais');
-    if (!materialsLoaded && !materialsLoading) {
-      setMaterialsLoading(true);
-      getMaterials(groupId)
-        .then((mats) => {
-          setMaterials(mats);
-          setMaterialsLoaded(true);
-        })
-        .catch(() => showAlert('Erro', 'Não foi possível carregar os materiais.'))
-        .finally(() => setMaterialsLoading(false));
-    }
-  };
-
-  // ── File picker & upload (web only)
-  const pickFile = () => {
-    if (Platform.OS !== 'web') {
-      showAlert('Upload', 'O upload de arquivos está disponível apenas pelo app web.');
-      return;
-    }
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp3,.mp4,.txt,.zip';
-    input.onchange = (e: any) => {
-      const file: File | undefined = e.target?.files?.[0];
-      if (file) {
-        setPendingFile(file);
-        // Pre-fill title with filename without extension
-        setPendingTitle(file.name.replace(/\.[^/.]+$/, ''));
-      }
-    };
-    input.click();
-  };
-
-  const cancelPendingUpload = () => {
-    setPendingFile(null);
-    setPendingTitle('');
-  };
-
-  const handleUpload = async () => {
-    if (!pendingFile || !appUser) return;
-    setUploading(true);
-    try {
-      const mat = await uploadMaterial(
-        groupId,
-        pendingFile,
-        pendingTitle,
-        '',
-        appUser.uid,
-        appUser.name
-      );
-      setMaterials((prev) => [mat, ...prev]);
-      cancelPendingUpload();
-    } catch (err: any) {
-      showAlert('Erro no upload', err?.message ?? 'Não foi possível enviar o arquivo.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteMaterial = (mat: GroupMaterial) => {
-    showConfirm(
-      'Excluir material',
-      `Excluir "${mat.title}"? Esta ação não pode ser desfeita.`,
-      async () => {
-        try {
-          await deleteMaterial(mat.id, mat.fileURL);
-          setMaterials((prev) => prev.filter((m) => m.id !== mat.id));
-        } catch {
-          showAlert('Erro', 'Não foi possível excluir o material.');
-        }
-      },
-      'Excluir'
-    );
-  };
-
+  // ── File open helper
   const openMaterial = (url: string) => {
     if (Platform.OS === 'web') {
       (window as any).open(url, '_blank');
@@ -392,9 +450,6 @@ export function GroupDetailScreen({ route, navigation }: any) {
     ? canViewRequests(appUser.role, user?.uid ?? '', group.leaderId)
     : false;
 
-  const canUploadMaterials =
-    appUser?.role === 'pastor' || appUser?.role === 'administrador';
-
   return (
     <View style={styles.container}>
       {/* ── Hero ── */}
@@ -426,29 +481,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      {/* ── Tab bar ── */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'grupo' && styles.tabActive]}
-          onPress={() => setActiveTab('grupo')}
-        >
-          <RNText style={[styles.tabText, activeTab === 'grupo' && styles.tabTextActive]}>
-            Grupo
-          </RNText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'materiais' && styles.tabActive]}
-          onPress={handleMaterialsTab}
-        >
-          <RNText style={[styles.tabText, activeTab === 'materiais' && styles.tabTextActive]}>
-            Materiais
-          </RNText>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Tab: Grupo ── */}
-      {activeTab === 'grupo' && (
-        <ScrollView style={styles.detailBody} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.detailBody} showsVerticalScrollIndicator={false}>
           {/* Informações */}
           <Card style={{ marginBottom: 12 }}>
             <Text style={styles.cardTitle}>INFORMAÇÕES</Text>
@@ -603,104 +636,6 @@ export function GroupDetailScreen({ route, navigation }: any) {
 
           <View style={{ height: 30 }} />
         </ScrollView>
-      )}
-
-      {/* ── Tab: Materiais ── */}
-      {activeTab === 'materiais' && (
-        <ScrollView style={styles.detailBody} showsVerticalScrollIndicator={false}>
-          {/* Upload button — pastor / admin only */}
-          {canUploadMaterials && !pendingFile && (
-            <TouchableOpacity style={styles.uploadBtn} onPress={pickFile}>
-              <RNText style={styles.uploadBtnText}>＋ Adicionar material</RNText>
-            </TouchableOpacity>
-          )}
-
-          {/* Pending upload form */}
-          {pendingFile && (
-            <View style={styles.pendingUploadCard}>
-              <RNText style={styles.pendingFileName} numberOfLines={1}>
-                {getFileIcon(pendingFile.type)}  {pendingFile.name}
-                {pendingFile.size ? `  ·  ${formatFileSize(pendingFile.size)}` : ''}
-              </RNText>
-              <TextInput
-                style={styles.pendingTitleInput}
-                value={pendingTitle}
-                onChangeText={setPendingTitle}
-                placeholder="Título do material"
-                placeholderTextColor={Colors.textMuted}
-                autoFocus
-              />
-              <View style={styles.pendingBtns}>
-                <TouchableOpacity
-                  style={[styles.pendingBtn, styles.pendingBtnCancel]}
-                  onPress={cancelPendingUpload}
-                  disabled={uploading}
-                >
-                  <RNText style={styles.pendingBtnCancelText}>Cancelar</RNText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.pendingBtn, styles.pendingBtnUpload, uploading && { opacity: 0.6 }]}
-                  onPress={handleUpload}
-                  disabled={uploading}
-                >
-                  <RNText style={styles.pendingBtnUploadText}>
-                    {uploading ? 'Enviando…' : 'Enviar'}
-                  </RNText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* Materials list */}
-          {materialsLoading ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 28 }} />
-          ) : materials.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyIcon}>📁</Text>
-              <Text style={styles.emptyText}>
-                {canUploadMaterials
-                  ? 'Nenhum material publicado ainda.\nClique em "Adicionar material" para começar.'
-                  : 'Nenhum material disponível para este grupo.'}
-              </Text>
-            </View>
-          ) : (
-            materials.map((mat) => (
-              <View key={mat.id} style={styles.materialCard}>
-                <RNText style={styles.materialIcon}>
-                  {getFileIcon(mat.fileType)}
-                </RNText>
-                <View style={styles.materialInfo}>
-                  <RNText style={styles.materialTitle} numberOfLines={2}>
-                    {mat.title}
-                  </RNText>
-                  <RNText style={styles.materialMeta}>
-                    {mat.uploaderName} · {formatDate(mat.uploadedAt)}
-                    {mat.fileSize ? `  ·  ${formatFileSize(mat.fileSize)}` : ''}
-                  </RNText>
-                </View>
-                <View style={styles.materialActions}>
-                  <TouchableOpacity
-                    style={styles.materialActionBtn}
-                    onPress={() => openMaterial(mat.fileURL)}
-                  >
-                    <RNText style={styles.materialDownloadIcon}>⬇</RNText>
-                  </TouchableOpacity>
-                  {canUploadMaterials && (
-                    <TouchableOpacity
-                      style={styles.materialActionBtn}
-                      onPress={() => handleDeleteMaterial(mat)}
-                    >
-                      <RNText style={styles.materialDeleteIcon}>✕</RNText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))
-          )}
-
-          <View style={{ height: 30 }} />
-        </ScrollView>
-      )}
     </View>
   );
 }
