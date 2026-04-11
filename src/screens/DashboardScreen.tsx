@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
   heroLogo: { width: 130, height: 46 },
   greeting: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
-  name: { fontSize: 22, fontWeight: '700', color: Colors.headerText, fontFamily: 'Lora_600SemiBold' },
+  name: { fontSize: 22, fontWeight: '700', color: Colors.headerText, fontFamily: 'Inter_700Bold' },
   body: { flex: 1, paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.lg },
   statCard: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  statNum: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  statNum: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Inter_700Bold' },
   statLabel: { fontSize: 10, color: Colors.textMuted, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2 },
   sectionTitle: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   bannerIcon: { fontSize: 26 },
   bannerText: { flex: 1 },
-  bannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
+  bannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' },
   bannerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   indicators: {
     flexDirection: 'row',

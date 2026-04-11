@@ -31,7 +31,7 @@ const AppStack = createNativeStackNavigator();
 const headerStyle = {
   headerStyle: { backgroundColor: Colors.headerBg },
   headerTintColor: Colors.headerText as string,
-  headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
+  headerTitleStyle: { fontFamily: 'Inter_700Bold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
 
@@ -79,7 +79,7 @@ function MainTabs({ navigation }: any) {
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '700',
-          fontFamily: 'SourceSans3_600SemiBold',
+          fontFamily: 'Inter_600SemiBold',
           color: Colors.textPrimary,
         },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,

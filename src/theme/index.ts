@@ -50,12 +50,11 @@ export const Colors = {
 };
 
 export const Typography = {
-  // Lora para títulos (mesma família do site)
-  heading: 'Lora_600SemiBold',
-  // Source Sans 3 para corpo
-  body: 'SourceSans3_400Regular',
-  bodySemiBold: 'SourceSans3_600SemiBold',
-  bodyBold: 'SourceSans3_700Bold',
+  heading: 'Inter_700Bold',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemiBold: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
 };
 
 export const Spacing = {

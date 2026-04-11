@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: Colors.textPrimary,
-    fontFamily: 'Lora_600SemiBold',
+    fontFamily: 'Inter_700Bold',
   },
   groupLeader: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   pendingBadge: {
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: Colors.headerText,
-    fontFamily: 'Lora_600SemiBold',
+    fontFamily: 'Inter_700Bold',
   },
   heroSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 3 },
   heroStats: { flexDirection: 'row', gap: 8 },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
-    fontFamily: 'Lora_600SemiBold',
+    fontFamily: 'Inter_700Bold',
   },
   heroStatLbl: {
     fontSize: 10,

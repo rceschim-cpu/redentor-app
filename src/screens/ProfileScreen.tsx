@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     gap: 6,
   },
-  heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, fontFamily: 'Lora_600SemiBold', marginTop: 8 },
+  heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, fontFamily: 'Inter_700Bold', marginTop: 8 },
   heroEmail: { fontSize: 12, color: Colors.textSecondary },
   roleBadge: {
     marginTop: 4,

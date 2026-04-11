@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reportIcon: { fontSize: 44, marginBottom: 4 },
-  reportTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  reportTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Inter_700Bold' },
   reportSub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 19, marginBottom: 8 },
   plateInput: {
     width: '100%',
