@@ -66,7 +66,7 @@ type ModuleItem = {
 
 const MODULES: ModuleItem[] = [
   { icon: 'people-outline',         label: 'Membros',        screen: 'Members',       staffOnly: true },
-  { icon: 'grid-outline',           label: 'Pequenos Grupos', screen: 'SmallGroups' },
+  { icon: 'grid-outline',           label: 'Peq. Grupos',    screen: 'SmallGroups' },
   { icon: 'calendar-outline',       label: 'Eventos',        screen: 'Events' },
   { icon: 'play-circle-outline',    label: 'Cultos',         screen: 'Cultos' },
   { icon: 'ribbon-outline',         label: '160 Anos',       screen: 'Celebration' },

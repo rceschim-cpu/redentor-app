@@ -205,7 +205,15 @@ export default function LoginScreen() {
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.btnGoogleText}>🔵  Entrar com Google</Text>
+            <View style={styles.btnGoogleInner}>
+              {/* Google "G" logo em SVG inline via Image data URI */}
+              <Image
+                source={{ uri: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuMzMgMCAyNCAwIDEzLjU4IDAgNC42NCA2LjQ3IDEuNjQgMTUuNzVsNy45NiA2LjE4QzkuMzcgMTYuMDYgMTYuMDkgOS41IDI0IDkuNXoiLz48cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNNDYuOTggMjQuNTVjMC0xLjU3LS4xNS0zLjA5LS4zOC00LjU1SDI0djkuMDJoMTIuOTRjLS41OCAyLjk2LTIuMjYgNS40OC00Ljc4IDcuMThsNy43MyA2Yy00LjUxIDQuMTgtMTAuOTkgNi40LTE4Ljg5IDYuNC05LjI2IDAtMTcuMy02LjA3LTIwLjE4LTE0LjU2bC03Ljk2IDYuMThDNi4xIDQxLjk2IDE0LjUyIDQ4IDI0IDQ4YzYuNDggMCAxMS45My0yLjE0IDE1LjkxLTUuNzlsLTcuNzMtNmMtMi4xMiAxLjQzLTQuODMgMi4yNy03LjkxIDIuMjctNy4yNiAwLTEzLjQtNC44OS0xNS42LTExLjQ4bC03Ljk4IDYuMkM2LjA3IDQxLjk0IDE0LjUzIDQ4IDI0IDQ4YzYuNSAwIDExLjk1LTIuMTMgMTUuOTMtNS43N2w3LjczIDZDNDMuNzUgNDUuMTMgNDggMzUuMDcgNDggMjRjMC0uODItLjAzLTEuNjQtLjA2LTIuNDVIMjR2OS4wMmgxMy4yYy0uNTcgMi45OC0yLjI3IDUuNTItNC44IDcuMjNsNy43MyA2YzQuNTItNC4xOCA3LjM5LTEwLjM4IDcuMzktMTkuMjV6Ii8+PHBhdGggZmlsbD0iI0ZCQkMwNCIgZD0iTTEwLjUzIDI4LjU5Yy0uMzctMS4xMy0uNTktMi4zMy0uNTktMy41OXMuMjItMi40NS41OS0zLjU5VjE1LjI1bC03Ljk2LTYuMThDLjkyIDE1LjY0IDAgMTkuNjUgMCAyNHMuOTIgOC4zNiAyLjU3IDExLjkzbDcuOTYtNi4xOC0uMDYtMS4xNnoiLz48cGF0aCBmaWxsPSIjMzRBODUzIiBkPSJNMjQgNDhjNi40OCAwIDExLjkzLTIuMTQgMTUuOTEtNS43OWwtNy43My02Yy0yLjEyIDEuNDMtNC44MyAyLjI3LTcuOTEgMi4yNy03LjI2IDAtMTMuNC00Ljg5LTE1LjYtMTEuNDhsLTcuOTYgNi4xOEM2LjEgNDEuOTYgMTQuNTIgNDggMjQgNDh6Ii8+PC9zdmc+' }}
+                style={styles.googleIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.btnGoogleText}>Entrar com Google</Text>
+            </View>
           </TouchableOpacity>
 
           {mode === 'login' && (
@@ -295,6 +303,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
   },
+  btnGoogleInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  googleIcon: { width: 20, height: 20 },
   btnGoogleText: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
   btnLink: { alignItems: 'center', paddingVertical: 8 },
   btnLinkText: { color: Colors.textSecondary, fontSize: 14 },
