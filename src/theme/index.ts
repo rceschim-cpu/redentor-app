@@ -2,7 +2,7 @@ export const Colors = {
   // Brand — Comunidade do Redentor (Proposta "Cal e Sombra")
   primary: '#4A7AB5',       // Azul vitral — cor de acento principal
   primaryLight: '#6B96C8',
-  background: '#B8B5B0',    // Cinza-concreto (parede da igreja)
+  background: '#EFEFED',    // Cinza claro quente
   surface: '#FFFFFF',
   border: '#D0CEC9',
   borderLight: '#E0DEDA',
