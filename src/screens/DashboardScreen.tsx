@@ -56,46 +56,24 @@ const BANNERS = [
   },
 ];
 
-type SectionItem = {
+type ModuleItem = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  screen: string | null;
+  screen: string;
   adminOnly?: boolean;
   staffOnly?: boolean;
 };
 
-type Section = {
-  title: string;
-  items: SectionItem[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    title: 'Principal',
-    items: [
-      { icon: 'people-outline', label: 'Membros', screen: 'Members', staffOnly: true },
-      { icon: 'grid-outline', label: 'Grupos', screen: 'SmallGroups' },
-      { icon: 'calendar-outline', label: 'Eventos', screen: 'Events' },
-      { icon: 'gift-outline', label: 'Aniversários', screen: null },
-    ],
-  },
-  {
-    title: 'Conteúdos',
-    items: [
-      { icon: 'play-circle-outline', label: 'Cultos', screen: 'Cultos' },
-      { icon: 'ribbon-outline', label: '160 Anos', screen: 'Celebration' },
-      { icon: 'notifications-outline', label: 'Notificações', screen: 'Notifications' },
-      { icon: 'list-outline', label: 'Agenda', screen: null },
-    ],
-  },
-  {
-    title: 'Gestão',
-    items: [
-      { icon: 'car-outline', label: 'Estacionamento', screen: 'Parking' },
-      { icon: 'settings-outline', label: 'Configurações', screen: 'Settings' },
-      { icon: 'person-outline', label: 'Usuários', screen: 'Users', adminOnly: true },
-    ],
-  },
+const MODULES: ModuleItem[] = [
+  { icon: 'people-outline',         label: 'Membros',        screen: 'Members',       staffOnly: true },
+  { icon: 'grid-outline',           label: 'Pequenos Grupos', screen: 'SmallGroups' },
+  { icon: 'calendar-outline',       label: 'Eventos',        screen: 'Events' },
+  { icon: 'play-circle-outline',    label: 'Cultos',         screen: 'Cultos' },
+  { icon: 'ribbon-outline',         label: '160 Anos',       screen: 'Celebration' },
+  { icon: 'notifications-outline',  label: 'Notificações',   screen: 'Notifications' },
+  { icon: 'car-outline',            label: 'Estacionamento', screen: 'Parking' },
+  { icon: 'settings-outline',       label: 'Configurações',  screen: 'Settings' },
+  { icon: 'person-outline',         label: 'Usuários',       screen: 'Users',         adminOnly: true },
 ];
 
 export default function DashboardScreen({ navigation }: any) {
@@ -234,37 +212,23 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         )}
 
-        {SECTIONS.map((section) => {
-          const visibleItems = section.items.filter(
-            (item) =>
-              (!item.adminOnly || isAdmin) &&
-              (!item.staffOnly || isStaff)
-          );
-          return (
-            <View key={section.title} style={styles.sectionBlock}>
-              <Text style={styles.sectionHeader}>{section.title.toUpperCase()}</Text>
-              <View style={styles.iconGrid}>
-                {visibleItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={styles.iconItem}
-                    activeOpacity={0.7}
-                    onPress={() =>
-                      item.screen
-                        ? navigation.navigate(item.screen)
-                        : Alert.alert(item.label, 'Em breve!')
-                    }
-                  >
-                    <View style={styles.iconCircle}>
-                      <Ionicons name={item.icon} size={26} color={Colors.textPrimary} />
-                    </View>
-                    <Text style={styles.iconLabel} numberOfLines={2}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
+        <View style={styles.iconGrid}>
+          {MODULES.filter(
+            (m) => (!m.adminOnly || isAdmin) && (!m.staffOnly || isStaff)
+          ).map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.iconItem}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(item.screen)}
+            >
+              <View style={styles.iconCircle}>
+                <Ionicons name={item.icon} size={26} color={Colors.textPrimary} />
               </View>
-            </View>
-          );
-        })}
+              <Text style={styles.iconLabel} numberOfLines={1}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -357,18 +321,6 @@ const styles = StyleSheet.create({
   indicatorDot: {
     height: 6,
     borderRadius: 3,
-  },
-  // Circular icon section styles
-  sectionBlock: {
-    marginBottom: Spacing.lg,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    letterSpacing: 0.8,
-    marginBottom: 16,
-    marginTop: 8,
   },
   iconGrid: {
     flexDirection: 'row',
