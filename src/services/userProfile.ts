@@ -34,7 +34,10 @@ export async function updateUserProfile(
   uid: string,
   data: Partial<Omit<AppUserProfile, 'uid'>>
 ): Promise<void> {
-  await updateDoc(doc(db, COL, uid), data as Record<string, unknown>);
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
+  await updateDoc(doc(db, COL, uid), clean);
 }
 
 export async function getUsersByRole(role: UserRole): Promise<AppUserProfile[]> {

@@ -32,7 +32,11 @@ export async function addMember(data: Omit<Member, 'id'>): Promise<string> {
 }
 
 export async function updateMember(id: string, data: Partial<Omit<Member, 'id'>>): Promise<void> {
-  await updateDoc(doc(db, COL, id), data as Record<string, unknown>);
+  // Firestore rejeita campos com valor undefined — remove antes de enviar
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
+  await updateDoc(doc(db, COL, id), clean);
 }
 
 export async function deleteMember(id: string): Promise<void> {

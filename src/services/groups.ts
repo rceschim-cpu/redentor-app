@@ -48,7 +48,10 @@ export async function createGroup(
 }
 
 export async function updateGroup(id: string, data: Partial<Group>): Promise<void> {
-  await updateDoc(doc(db, COL, id), data as Record<string, unknown>);
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
+  await updateDoc(doc(db, COL, id), clean);
 }
 
 export async function deleteGroup(id: string): Promise<void> {
