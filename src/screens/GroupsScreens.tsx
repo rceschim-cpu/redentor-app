@@ -14,7 +14,7 @@ import { Colors, Spacing, Radius } from '../theme';
 import { AppText as Text, Avatar, Card, DetailRow, PrimaryButton } from '../components';
 import { Group, GroupMembership } from '../types';
 import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/groups';
-import { getMemberships, getPendingRequests, getUserMembership, requestToJoin } from '../services/memberships';
+import { getMemberships, getPendingRequests, getUserMembership, requestToJoin, removeMember, transferMember } from '../services/memberships';
 import { canCreateGroup, canManageGroup, canViewRequests } from '../services/permissions';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -134,6 +134,10 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [transferTarget, setTransferTarget] = useState<GroupMembership | null>(null);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
+  const [transferring, setTransferring] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -178,6 +182,54 @@ export function GroupDetailScreen({ route, navigation }: any) {
     } finally {
       setJoining(false);
     }
+  };
+
+  const handleRemoveMember = (m: GroupMembership) => {
+    const doRemove = async () => {
+      setRemovingId(m.id);
+      try {
+        await removeMember(groupId, m.id, m.userId);
+        setMembers((prev) => prev.filter((x) => x.id !== m.id));
+        setGroup((g) => g ? { ...g, memberCount: (g.memberCount ?? 1) - 1 } : g);
+      } catch (err: any) {
+        if (Platform.OS === 'web') { (window as any).alert(err?.message ?? 'Erro ao remover.'); }
+        else { Alert.alert('Erro', err?.message ?? 'Erro ao remover.'); }
+      } finally { setRemovingId(null); }
+    };
+    if (Platform.OS === 'web') {
+      if ((window as any).confirm(`Remover ${m.userName} do grupo?`)) doRemove();
+    } else {
+      Alert.alert('Remover membro', `Remover ${m.userName} do grupo?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Remover', style: 'destructive', onPress: doRemove },
+      ]);
+    }
+  };
+
+  const openTransferPicker = async (m: GroupMembership) => {
+    setTransferTarget(m);
+    if (allGroups.length === 0) {
+      const { getGroups } = await import('../services/groups');
+      const gs = await getGroups();
+      setAllGroups(gs.filter((g) => g.id !== groupId));
+    }
+  };
+
+  const handleTransfer = async (toGroup: Group) => {
+    if (!transferTarget) return;
+    setTransferring(true);
+    try {
+      await transferMember(groupId, transferTarget.id, transferTarget.userId,
+        transferTarget.userName, transferTarget.userEmail, toGroup.id);
+      setMembers((prev) => prev.filter((x) => x.id !== transferTarget.id));
+      setGroup((g) => g ? { ...g, memberCount: (g.memberCount ?? 1) - 1 } : g);
+      setTransferTarget(null);
+      if (Platform.OS === 'web') { (window as any).alert(`${transferTarget.userName} transferido para ${toGroup.name}.`); }
+      else { Alert.alert('Transferido!', `${transferTarget.userName} foi movido para ${toGroup.name}.`); }
+    } catch (err: any) {
+      if (Platform.OS === 'web') { (window as any).alert(err?.message ?? 'Erro ao transferir.'); }
+      else { Alert.alert('Erro', err?.message ?? 'Erro ao transferir.'); }
+    } finally { setTransferring(false); }
   };
 
   const handleGroupDelete = () => {
@@ -293,9 +345,54 @@ export function GroupDetailScreen({ route, navigation }: any) {
                     <Text style={styles.pillGreenText}>Líder</Text>
                   </View>
                 )}
+                {isManager && m.userId !== group.leaderId && (
+                  <View style={styles.memberActions}>
+                    <TouchableOpacity
+                      style={styles.memberActionBtn}
+                      onPress={() => openTransferPicker(m)}
+                      disabled={!!removingId}
+                    >
+                      <Text style={styles.memberActionTransfer}>↔</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.memberActionBtn}
+                      onPress={() => handleRemoveMember(m)}
+                      disabled={removingId === m.id}
+                    >
+                      <Text style={styles.memberActionRemove}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))}
           </>
+        )}
+
+        {/* Modal de transferência */}
+        {transferTarget && (
+          <View style={styles.transferPicker}>
+            <Text style={styles.transferTitle}>
+              Transferir {transferTarget.userName} para:
+            </Text>
+            {allGroups.length === 0 ? (
+              <Text style={styles.transferEmpty}>Nenhum outro grupo disponível.</Text>
+            ) : (
+              allGroups.map((g) => (
+                <TouchableOpacity
+                  key={g.id}
+                  style={styles.transferOption}
+                  onPress={() => handleTransfer(g)}
+                  disabled={transferring}
+                >
+                  <Text style={styles.transferOptionText}>{g.icon ?? '🏠'} {g.name}</Text>
+                  {transferring && <Text style={{ color: Colors.textMuted, fontSize: 12 }}>...</Text>}
+                </TouchableOpacity>
+              ))
+            )}
+            <TouchableOpacity onPress={() => setTransferTarget(null)} style={styles.transferCancel}>
+              <Text style={styles.transferCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Botão de ação baseado no status do usuário */}
@@ -568,6 +665,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnOutlineText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  memberActions: { flexDirection: 'row', gap: 6, marginLeft: 4 },
+  memberActionBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
+  memberActionTransfer: { fontSize: 14, color: Colors.primary, fontWeight: '700' },
+  memberActionRemove: { fontSize: 13, color: Colors.danger, fontWeight: '700' },
+  transferPicker: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 14, borderWidth: 1, borderColor: Colors.border, marginTop: 12, gap: 8 },
+  transferTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
+  transferEmpty: { fontSize: 13, color: Colors.textMuted },
+  transferOption: { padding: 12, borderRadius: Radius.md, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  transferOptionText: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  transferCancel: { alignItems: 'center', paddingVertical: 8 },
+  transferCancelText: { fontSize: 13, color: Colors.textMuted, fontWeight: '600' },
   btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.primary, alignItems: 'center' },
   btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },

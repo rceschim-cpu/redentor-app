@@ -17,6 +17,7 @@ import { AppText as Text, Avatar, StatusBadge, Card, ChipGroup, DetailRow, Prima
 import { Member, MemberStatus } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
+import { canEditMember } from '../services/permissions';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
 import { showAlert } from '../utils/alert';
@@ -126,8 +127,9 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const { appUser } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const [groupName, setGroupName] = useState<string | null>(null);
+  const [groupLeaderId, setGroupLeaderId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
+  const canEdit = canEditMember(appUser?.role ?? 'membro', appUser?.uid ?? '', groupLeaderId);
   const canDelete = appUser?.role === 'administrador';
 
   useFocusEffect(
@@ -138,7 +140,10 @@ export function MemberDetailScreen({ route, navigation }: any) {
           setMember(m);
           if (m) navigation.setOptions({ title: m.name });
           if (m?.groupId) {
-            getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
+            getGroup(m.groupId).then((g) => {
+              setGroupName(g?.name ?? null);
+              setGroupLeaderId(g?.leaderId);
+            }).catch(() => {});
           }
         })
         .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
