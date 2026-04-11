@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   Image,
 } from 'react-native';
 import { Colors, Spacing, Radius, Typography } from '../theme';
@@ -15,6 +14,7 @@ import { addMember } from '../services/members';
 import { updateUserProfile } from '../services/userProfile';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
+import { showAlert } from '../utils/alert';
 
 export default function CompleteProfileScreen() {
   const { user, appUser, refreshAppUser } = useAuth();
@@ -24,34 +24,36 @@ export default function CompleteProfileScreen() {
   const [neighborhood, setNeighborhood] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const canSkip = appUser?.role === 'administrador' || appUser?.role === 'pastor';
-
   const handleComplete = async () => {
     if (!name.trim()) {
-      Alert.alert('Nome obrigatório', 'Por favor informe seu nome completo.');
+      showAlert('Nome obrigatório', 'Por favor informe seu nome completo.');
       return;
     }
     if (!user || !appUser) return;
 
     setSaving(true);
     try {
-      const memberId = await addMember({
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-        birthDate: birthDate.trim() || undefined,
-        neighborhood: neighborhood.trim() || undefined,
-        email: appUser.email,
-        status: 'ativo',
-        avatarIndex: Math.floor(Math.random() * 4),
-      });
+      // Se o usuário já tem memberId, não cria duplicata — só atualiza o perfil
+      let memberId = appUser.memberId;
+      if (!memberId) {
+        memberId = await addMember({
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+          birthDate: birthDate.trim() || undefined,
+          neighborhood: neighborhood.trim() || undefined,
+          email: appUser.email,
+          status: 'ativo',
+          avatarIndex: Math.floor(Math.random() * 4),
+        });
+      }
       await updateUserProfile(user.uid, {
         name: name.trim(),
         memberId,
         profileComplete: true,
       });
       await refreshAppUser();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível salvar o perfil. Tente novamente.');
+    } catch (e: any) {
+      showAlert('Erro', e?.message ?? 'Não foi possível salvar o perfil. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -62,8 +64,8 @@ export default function CompleteProfileScreen() {
     try {
       await updateUserProfile(user.uid, { profileComplete: true });
       await refreshAppUser();
-    } catch {
-      Alert.alert('Erro', 'Tente novamente.');
+    } catch (e: any) {
+      showAlert('Erro', e?.message ?? 'Tente novamente.');
     }
   };
 
@@ -141,11 +143,9 @@ export default function CompleteProfileScreen() {
         onPress={handleComplete}
       />
 
-      {canSkip && (
-        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Pular por enquanto</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+        <Text style={styles.skipText}>Pular por enquanto</Text>
+      </TouchableOpacity>
 
       <View style={{ height: 40 }} />
     </ScrollView>

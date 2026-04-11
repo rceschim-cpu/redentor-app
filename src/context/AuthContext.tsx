@@ -42,7 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
         updates.photoURL = firebaseUser.photoURL;
       }
-      if (firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
+      // Só sincroniza nome do Google se o usuário ainda não completou o perfil
+      if (!profile.profileComplete && firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
         updates.name = firebaseUser.displayName;
       }
       if (Object.keys(updates).length > 0) {
