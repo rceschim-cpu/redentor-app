@@ -9,6 +9,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Radius } from '../theme';
 import { AppText as Text, Avatar } from '../components';
@@ -56,7 +57,7 @@ const BANNERS = [
 ];
 
 type SectionItem = {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   screen: string | null;
   adminOnly?: boolean;
@@ -71,27 +72,27 @@ const SECTIONS: Section[] = [
   {
     title: 'Principal',
     items: [
-      { icon: '👥', label: 'Membros', screen: 'Members' },
-      { icon: '🏘️', label: 'Grupos', screen: 'SmallGroups' },
-      { icon: '📅', label: 'Eventos', screen: 'Events' },
-      { icon: '🎂', label: 'Aniversários', screen: null },
+      { icon: 'people-outline', label: 'Membros', screen: 'Members' },
+      { icon: 'grid-outline', label: 'Grupos', screen: 'SmallGroups' },
+      { icon: 'calendar-outline', label: 'Eventos', screen: 'Events' },
+      { icon: 'gift-outline', label: 'Aniversários', screen: null },
     ],
   },
   {
     title: 'Conteúdos',
     items: [
-      { icon: '▶️', label: 'Cultos', screen: 'Cultos' },
-      { icon: '✦', label: '160 Anos', screen: 'Celebration' },
-      { icon: '🔔', label: 'Notificações', screen: 'Notifications' },
-      { icon: '📋', label: 'Agenda', screen: null },
+      { icon: 'play-circle-outline', label: 'Cultos', screen: 'Cultos' },
+      { icon: 'ribbon-outline', label: '160 Anos', screen: 'Celebration' },
+      { icon: 'notifications-outline', label: 'Notificações', screen: 'Notifications' },
+      { icon: 'list-outline', label: 'Agenda', screen: null },
     ],
   },
   {
     title: 'Gestão',
     items: [
-      { icon: '🅿️', label: 'Estacionamento', screen: 'Parking' },
-      { icon: '⚙️', label: 'Configurações', screen: 'Settings' },
-      { icon: '👤', label: 'Usuários', screen: 'Users', adminOnly: true },
+      { icon: 'car-outline', label: 'Estacionamento', screen: 'Parking' },
+      { icon: 'settings-outline', label: 'Configurações', screen: 'Settings' },
+      { icon: 'person-outline', label: 'Usuários', screen: 'Users', adminOnly: true },
     ],
   },
 ];
@@ -249,7 +250,7 @@ export default function DashboardScreen({ navigation }: any) {
                     }
                   >
                     <View style={styles.iconCircle}>
-                      <Text style={styles.iconEmoji}>{item.icon}</Text>
+                      <Ionicons name={item.icon} size={26} color={Colors.textPrimary} />
                     </View>
                     <Text style={styles.iconLabel} numberOfLines={2}>{item.label}</Text>
                   </TouchableOpacity>
@@ -379,9 +380,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFEFED',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconEmoji: {
-    fontSize: 26,
   },
   iconLabel: {
     fontSize: 11,
