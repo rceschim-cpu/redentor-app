@@ -37,15 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await createUserProfile(firebaseUser.uid, newProfile);
       profile = await getUserProfile(firebaseUser.uid);
     } else {
-      // Sincroniza campos que podem ter mudado (foto Google, displayName do signup)
       const updates: Partial<AppUserProfile> = {};
+
+      // Se já tem memberId mas não tem profileComplete, corrige automaticamente
+      if (profile.memberId && !profile.profileComplete) {
+        updates.profileComplete = true;
+      }
+
+      // Sincroniza foto do Google se mudou
       if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
         updates.photoURL = firebaseUser.photoURL;
       }
-      // Só sincroniza nome do Google se o usuário ainda não completou o perfil
-      if (!profile.profileComplete && firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
+
+      // Só sincroniza nome do Google se ainda não completou o perfil
+      if (!profile.profileComplete && !profile.memberId && firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
         updates.name = firebaseUser.displayName;
       }
+
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(firebaseUser.uid, updates);
         profile = { ...profile, ...updates };
