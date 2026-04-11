@@ -189,7 +189,7 @@ export default function DashboardScreen({ navigation }: any) {
                 <View style={[styles.moduleIcon, { backgroundColor: m.color }]}>
                   <Text style={styles.moduleEmoji}>{m.icon}</Text>
                 </View>
-                <Text style={styles.moduleLabel} numberOfLines={2}>{m.label}</Text>
+                <Text style={styles.moduleLabel} numberOfLines={1} maxScale={1.1}>{m.label}</Text>
               </View>
               <Text style={styles.moduleSub}>{m.sub}</Text>
             </TouchableOpacity>

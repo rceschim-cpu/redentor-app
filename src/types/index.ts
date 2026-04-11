@@ -78,6 +78,21 @@ export interface GroupMembership {
   resolvedBy?: string;
 }
 
+// ─── Materiais de Pequenos Grupos ─────────────────────────────────────────────
+export interface GroupMaterial {
+  id: string;
+  groupId: string;
+  title: string;
+  description?: string;
+  fileURL: string;
+  fileName: string;
+  fileType: string;
+  fileSize?: number;
+  uploadedBy: string;
+  uploaderName: string;
+  uploadedAt: string;
+}
+
 // ─── User (legado — mantido para compatibilidade) ─────────────────────────────
 export interface User {
   id: string;

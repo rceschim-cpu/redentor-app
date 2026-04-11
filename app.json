@@ -29,7 +29,9 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "baseUrl": "/redentor-app"
+      "baseUrl": "/redentor-app",
+      "favicon": "./assets/logo.png",
+      "name": "Comunidade do Redentor"
     }
   }
 }

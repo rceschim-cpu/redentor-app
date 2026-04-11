@@ -17,6 +17,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import EventsScreen from '../screens/EventsScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
+import GroupMaterialsScreen from '../screens/GroupMaterialsScreen';
 import {
   MembersListScreen,
   MemberDetailScreen,
@@ -144,6 +145,7 @@ function AppNavigator() {
       <AppStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
       <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
       <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
+      <AppStack.Screen name="GroupMaterials" component={GroupMaterialsScreen} options={{ title: 'Materiais' }} />
       {/* Outros */}
       <AppStack.Screen name="Events" component={EventsScreen} options={{ title: 'Agenda' }} />
       <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />

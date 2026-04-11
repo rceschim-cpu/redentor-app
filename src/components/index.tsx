@@ -4,11 +4,16 @@ import { Colors, Radius, getAvatarColor } from '../theme';
 import { useFontScale } from '../context/FontScaleContext';
 
 // ─── AppText — Text com scale de acessibilidade aplicado ───────────────────
-export function AppText({ style, ...props }: TextProps) {
+interface AppTextProps extends TextProps {
+  /** Caps the font-scale multiplier for UI elements where larger text would break layout */
+  maxScale?: number;
+}
+export function AppText({ style, maxScale, ...props }: AppTextProps) {
   const { scale } = useFontScale();
-  if (scale === 1) return <Text style={style} {...props} />;
+  const effectiveScale = maxScale ? Math.min(scale, maxScale) : scale;
+  if (effectiveScale === 1) return <Text style={style} {...props} />;
   const flat = StyleSheet.flatten(style) ?? {};
-  const scaled = flat.fontSize ? { ...flat, fontSize: Math.round(flat.fontSize * scale) } : flat;
+  const scaled = flat.fontSize ? { ...flat, fontSize: Math.round(flat.fontSize * effectiveScale) } : flat;
   return <Text style={scaled} {...props} />;
 }
 
