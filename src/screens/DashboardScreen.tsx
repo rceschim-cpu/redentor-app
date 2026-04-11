@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text as RNText,
@@ -9,11 +9,13 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, Radius } from '../theme';
 import { AppText as Text, Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { getMembers } from '../services/members';
 import { getGroups } from '../services/groups';
+import { getUnreadCount } from '../services/notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - Spacing.lg * 2;
@@ -68,6 +70,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [memberCount, setMemberCount] = useState('—');
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
 
@@ -79,6 +82,16 @@ export default function DashboardScreen({ navigation }: any) {
       .then((g) => setGroupCount(g.length.toString()))
       .catch(() => setGroupCount('—'));
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (appUser?.uid) {
+        getUnreadCount(appUser.uid)
+          .then(setUnreadCount)
+          .catch(() => setUnreadCount(0));
+      }
+    }, [appUser?.uid])
+  );
 
 
   return (
@@ -101,6 +114,19 @@ export default function DashboardScreen({ navigation }: any) {
                 <Text style={styles.adminBtnIcon}>⚙</Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              style={styles.adminBtn}
+            >
+              <Text style={styles.adminBtnIcon}>🔔</Text>
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
               <Avatar name={displayName} size={38} index={1} photoURL={appUser?.photoURL} />
             </TouchableOpacity>
@@ -261,6 +287,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   adminBtnIcon: { fontSize: 18, color: Colors.textPrimary },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: Colors.danger,
+    borderRadius: Radius.full,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: Colors.textOnDark,
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    lineHeight: 11,
+  },
   bannerScroll: { marginTop: Spacing.lg, marginBottom: 0 },
   bannerSlide: {
     borderRadius: Radius.lg,

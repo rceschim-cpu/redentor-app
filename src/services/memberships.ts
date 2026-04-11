@@ -79,6 +79,29 @@ export async function requestToJoin(
   await updateDoc(doc(db, 'groups', groupId), {
     pendingCount: increment(1),
   });
+
+  // Notify the group leader
+  try {
+    const groupSnap = await getDoc(doc(db, 'groups', groupId));
+    if (groupSnap.exists()) {
+      const groupData = groupSnap.data();
+      const leaderId = groupData.leaderId as string | undefined;
+      const groupName = groupData.name as string | undefined;
+      if (leaderId) {
+        const { sendNotification } = await import('./notifications');
+        await sendNotification(
+          leaderId,
+          'Nova solicitação de ingresso',
+          `${userName} quer entrar no grupo "${groupName ?? ''}"`,
+          'join_request',
+          { groupId, groupName }
+        );
+      }
+    }
+  } catch {
+    // Non-critical
+  }
+
   return ref.id;
 }
 

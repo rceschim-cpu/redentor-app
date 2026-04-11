@@ -18,6 +18,23 @@ export interface AppUserProfile {
   profileComplete?: boolean; // true após completar cadastro no primeiro acesso
   photoURL?: string;         // foto importada do Google (ou outra provider)
   createdAt?: string;
+  expoPushToken?: string;    // token para notificações push nativas (opcional)
+}
+
+// ─── Notificações in-app (Firestore /notifications/{uid}/items) ───────────────
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  type: 'join_request' | 'parking' | 'general';
+  read: boolean;
+  createdAt: string;
+  metadata?: {
+    groupId?: string;
+    groupName?: string;
+    plate?: string;
+    memberName?: string;
+  };
 }
 
 // ─── Membros ───────────────────────────────────────────────────────────────────

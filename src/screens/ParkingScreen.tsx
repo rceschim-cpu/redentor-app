@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  Platform,
   ActivityIndicator,
   Linking,
   ScrollView,
@@ -15,21 +12,15 @@ import { Colors, Spacing, Radius } from '../theme';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Member } from '../types';
+import { AppText as Text } from '../components';
+import { showAlert } from '../utils/alert';
+import { findUserByMemberId, sendNotification } from '../services/notifications';
 
 export default function ParkingScreen() {
   const [plate, setPlate] = useState('');
   const [searching, setSearching] = useState(false);
   const [found, setFound] = useState<Member | null | 'not_found'>(null);
-  const [reportMode, setReportMode] = useState(false);
-
-  const showAlert = (title: string, msg?: string) => {
-    if (Platform.OS === 'web') {
-      // @ts-ignore
-      window.alert(msg ? `${title}\n${msg}` : title);
-    } else {
-      Alert.alert(title, msg);
-    }
-  };
+  const [notifying, setNotifying] = useState(false);
 
   const searchByPlate = async () => {
     const normalized = plate.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -60,9 +51,36 @@ export default function ParkingScreen() {
   const handleContact = (member: Member) => {
     if (member.phone) {
       const phone = member.phone.replace(/\D/g, '');
-      Linking.openURL(`https://wa.me/55${phone}?text=${encodeURIComponent(`Olá ${member.name}, seu carro (placa ${plate.toUpperCase()}) está bloqueando a saída do estacionamento da Comunidade do Redentor. Por favor, retire-o o quanto antes. Obrigado!`)}`);
+      Linking.openURL(
+        `https://wa.me/55${phone}?text=${encodeURIComponent(
+          `Olá ${member.name}, seu carro (placa ${plate.toUpperCase()}) está bloqueando a saída do estacionamento da Comunidade do Redentor. Por favor, retire-o o quanto antes. Obrigado!`
+        )}`
+      );
     } else {
       showAlert('Sem telefone', 'Este membro não tem telefone cadastrado.');
+    }
+  };
+
+  const handleNotifyViaApp = async (member: Member) => {
+    setNotifying(true);
+    try {
+      const ownerUid = await findUserByMemberId(member.id);
+      if (!ownerUid) {
+        showAlert('Membro sem conta', 'Este membro não tem conta no app.');
+        return;
+      }
+      await sendNotification(
+        ownerUid,
+        'Carro bloqueando saída',
+        `Seu carro (placa ${plate.toUpperCase()}) está bloqueando a saída do estacionamento da Comunidade do Redentor. Por favor, retire-o o quanto antes.`,
+        'parking',
+        { plate: plate.toUpperCase(), memberName: member.name }
+      );
+      showAlert('Notificação enviada!', 'O proprietário foi avisado pelo app.');
+    } catch {
+      showAlert('Erro', 'Não foi possível enviar a notificação.');
+    } finally {
+      setNotifying(false);
     }
   };
 
@@ -128,6 +146,17 @@ export default function ParkingScreen() {
           >
             <Text style={styles.contactBtnText}>📱 Avisar via WhatsApp</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.notifyBtn}
+            onPress={() => handleNotifyViaApp(found as Member)}
+            disabled={notifying}
+          >
+            {notifying ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.contactBtnText}>🔔 Notificar via App</Text>
+            )}
+          </TouchableOpacity>
         </View>
       )}
     </ScrollView>
@@ -191,6 +220,15 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingVertical: 12,
     paddingHorizontal: 24,
+  },
+  notifyBtn: {
+    marginTop: 8,
+    backgroundColor: Colors.archBlue,
+    borderRadius: Radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    minWidth: 200,
+    alignItems: 'center',
   },
   contactBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

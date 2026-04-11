@@ -3,6 +3,7 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { getUserProfile, createUserProfile, updateUserProfile } from '../services/userProfile';
 import { AppUserProfile } from '../types';
+import { registerExpoPushToken } from '../services/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -50,6 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setAppUser(profile);
+    if (profile) {
+      registerExpoPushToken(profile.uid).catch(() => {}); // best-effort, don't block
+    }
   };
 
   useEffect(() => {
