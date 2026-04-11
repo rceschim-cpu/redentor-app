@@ -55,13 +55,45 @@ const BANNERS = [
   },
 ];
 
-const MODULES = [
-  { icon: '👥', label: 'Membros', sub: 'Cadastro geral', color: '#EDE9F7', screen: 'Members' },
-  { icon: '🏘️', label: 'Pequenos Grupos', sub: 'Grupos ativos', color: '#E8F4EA', screen: 'SmallGroups' },
-  { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: 'Events' },
-  { icon: '▶️', label: 'Cultos', sub: 'Links ao vivo', color: '#FDF0E8', screen: 'Cultos' },
-  { icon: '🅿️', label: 'Estacionamento', sub: 'Gestão de vagas', color: '#F0F0EE', screen: 'Parking' },
-  { icon: '⚙️', label: 'Configurações', sub: 'Tamanho da letra', color: '#F0EFED', screen: 'Settings' },
+type SectionItem = {
+  icon: string;
+  label: string;
+  screen: string | null;
+  adminOnly?: boolean;
+};
+
+type Section = {
+  title: string;
+  items: SectionItem[];
+};
+
+const SECTIONS: Section[] = [
+  {
+    title: 'Principal',
+    items: [
+      { icon: '👥', label: 'Membros', screen: 'Members' },
+      { icon: '🏘️', label: 'Grupos', screen: 'SmallGroups' },
+      { icon: '📅', label: 'Eventos', screen: 'Events' },
+      { icon: '🎂', label: 'Aniversários', screen: null },
+    ],
+  },
+  {
+    title: 'Conteúdos',
+    items: [
+      { icon: '▶️', label: 'Cultos', screen: 'Cultos' },
+      { icon: '✦', label: '160 Anos', screen: 'Celebration' },
+      { icon: '🔔', label: 'Notificações', screen: 'Notifications' },
+      { icon: '📋', label: 'Agenda', screen: null },
+    ],
+  },
+  {
+    title: 'Gestão',
+    items: [
+      { icon: '🅿️', label: 'Estacionamento', screen: 'Parking' },
+      { icon: '⚙️', label: 'Configurações', screen: 'Settings' },
+      { icon: '👤', label: 'Usuários', screen: 'Users', adminOnly: true },
+    ],
+  },
 ];
 
 export default function DashboardScreen({ navigation }: any) {
@@ -92,7 +124,6 @@ export default function DashboardScreen({ navigation }: any) {
       }
     }, [appUser?.uid])
   );
-
 
   return (
     <View style={styles.container}>
@@ -198,29 +229,35 @@ export default function DashboardScreen({ navigation }: any) {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>MÓDULOS</Text>
-        <View style={styles.grid}>
-          {MODULES.map((m) => (
-            <TouchableOpacity
-              key={m.label}
-              style={styles.moduleCard}
-              activeOpacity={0.75}
-              onPress={() =>
-                m.screen
-                  ? navigation.navigate(m.screen)
-                  : Alert.alert(m.label, 'Em breve!')
-              }
-            >
-              <View style={styles.moduleHeader}>
-                <View style={[styles.moduleIcon, { backgroundColor: m.color }]}>
-                  <Text style={styles.moduleEmoji}>{m.icon}</Text>
-                </View>
-                <Text style={styles.moduleLabel} numberOfLines={1} maxScale={1.1}>{m.label}</Text>
+        {SECTIONS.map((section) => {
+          const visibleItems = section.items.filter(
+            (item) => !item.adminOnly || isAdmin
+          );
+          return (
+            <View key={section.title} style={styles.sectionBlock}>
+              <Text style={styles.sectionHeader}>{section.title.toUpperCase()}</Text>
+              <View style={styles.iconGrid}>
+                {visibleItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={styles.iconItem}
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      item.screen
+                        ? navigation.navigate(item.screen)
+                        : Alert.alert(item.label, 'Em breve!')
+                    }
+                  >
+                    <View style={styles.iconCircle}>
+                      <Text style={styles.iconEmoji}>{item.icon}</Text>
+                    </View>
+                    <Text style={styles.iconLabel} numberOfLines={2}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <Text style={styles.moduleSub}>{m.sub}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+            </View>
+          );
+        })}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -261,22 +298,6 @@ const styles = StyleSheet.create({
   },
   statNum: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Inter_700Bold' },
   statLabel: { fontSize: 10, color: Colors.textMuted, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 10 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  moduleCard: {
-    width: '47%',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 6,
-  },
-  moduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  moduleIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  moduleEmoji: { fontSize: 16 },
-  moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
-  moduleSub: { fontSize: 11, color: Colors.textMuted },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   adminBtn: {
     width: 36,
@@ -312,7 +333,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 68,
+    minHeight: 60,
   },
   bannerIcon: { fontSize: 26 },
   bannerText: { flex: 1 },
@@ -329,5 +350,45 @@ const styles = StyleSheet.create({
   indicatorDot: {
     height: 6,
     borderRadius: 3,
+  },
+  // Circular icon section styles
+  sectionBlock: {
+    marginBottom: Spacing.lg,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  iconItem: {
+    width: '25%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#EFEFED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconEmoji: {
+    fontSize: 26,
+  },
+  iconLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginTop: 6,
+    maxWidth: 72,
   },
 });
