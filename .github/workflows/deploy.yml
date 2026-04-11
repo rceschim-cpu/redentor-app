@@ -32,6 +32,12 @@ jobs:
       - name: Install web dependencies
         run: npx expo install react-native-web@~0.19.10 react-dom@18.2.0 @expo/metro-runtime@~3.2.3
 
+      - name: Deploy Firebase Storage Rules
+        if: env.FIREBASE_TOKEN != ''
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: npx firebase-tools deploy --only storage --token "$FIREBASE_TOKEN" --non-interactive
+
       - name: Build web
         run: npx expo export --platform web
 

@@ -8,7 +8,7 @@ import {
   orderBy,
   where,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
 import { GroupMaterial } from '../types';
 
@@ -32,9 +32,30 @@ export async function uploadMaterial(
   uploadedBy: string,
   uploaderName: string
 ): Promise<GroupMaterial> {
-  const path = `group_materials/${groupId}/${Date.now()}_${file.name}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `group_materials/${groupId}/${Date.now()}_${safeName}`;
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
+
+  // uploadBytesResumable é mais robusto e reporta erros com mais detalhe
+  await new Promise<void>((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+    task.on(
+      'state_changed',
+      null,
+      (err) => {
+        // Traduz os erros mais comuns do Storage
+        if (err.code === 'storage/unauthorized') {
+          reject(new Error('Sem permissão para fazer upload. Verifique as regras do Firebase Storage.'));
+        } else if (err.code === 'storage/canceled') {
+          reject(new Error('Upload cancelado.'));
+        } else {
+          reject(new Error(`Erro no upload (${err.code}): ${err.message}`));
+        }
+      },
+      () => resolve()
+    );
+  });
+
   const fileURL = await getDownloadURL(storageRef);
 
   const data: Omit<GroupMaterial, 'id'> = {
