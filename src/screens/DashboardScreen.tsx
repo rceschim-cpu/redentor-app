@@ -61,6 +61,7 @@ type SectionItem = {
   label: string;
   screen: string | null;
   adminOnly?: boolean;
+  staffOnly?: boolean;
 };
 
 type Section = {
@@ -72,7 +73,7 @@ const SECTIONS: Section[] = [
   {
     title: 'Principal',
     items: [
-      { icon: 'people-outline', label: 'Membros', screen: 'Members' },
+      { icon: 'people-outline', label: 'Membros', screen: 'Members', staffOnly: true },
       { icon: 'grid-outline', label: 'Grupos', screen: 'SmallGroups' },
       { icon: 'calendar-outline', label: 'Eventos', screen: 'Events' },
       { icon: 'gift-outline', label: 'Aniversários', screen: null },
@@ -100,6 +101,7 @@ const SECTIONS: Section[] = [
 export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
   const isAdmin = appUser?.role === 'administrador';
+  const isStaff = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const [memberCount, setMemberCount] = useState('—');
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
@@ -218,21 +220,25 @@ export default function DashboardScreen({ navigation }: any) {
       </View>
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        <View style={styles.statsRow}>
-          {[
-            { num: memberCount, label: 'Membros' },
-            { num: groupCount, label: 'Grupos' },
-          ].map((s) => (
-            <View key={s.label} style={styles.statCard}>
-              <Text style={styles.statNum}>{s.num}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
+        {isStaff && (
+          <View style={styles.statsRow}>
+            {[
+              { num: memberCount, label: 'Membros' },
+              { num: groupCount, label: 'Grupos' },
+            ].map((s) => (
+              <View key={s.label} style={styles.statCard}>
+                <Text style={styles.statNum}>{s.num}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {SECTIONS.map((section) => {
           const visibleItems = section.items.filter(
-            (item) => !item.adminOnly || isAdmin
+            (item) =>
+              (!item.adminOnly || isAdmin) &&
+              (!item.staffOnly || isStaff)
           );
           return (
             <View key={section.title} style={styles.sectionBlock}>
