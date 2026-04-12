@@ -98,32 +98,17 @@ function MainTabs({ navigation }: any) {
       <Tab.Screen
         name="Members"
         component={MembersListScreen}
-        options={({ navigation }) => ({
-          title: 'Membros',
-          headerShown: true,
-          ...headerStyle,
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
-        })}
+        options={{ title: 'Membros', headerShown: false }}
       />
       <Tab.Screen
         name="SmallGroups"
         component={GroupsListScreen}
-        options={({ navigation }) => ({
-          title: 'Pequenos Grupos',
-          headerShown: true,
-          ...headerStyle,
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
-        })}
+        options={{ title: 'Pequenos Grupos', headerShown: false }}
       />
       <Tab.Screen
         name="Celebration"
         component={CelebrationScreen}
-        options={({ navigation }) => ({
-          title: '160 Anos',
-          headerShown: true,
-          ...headerStyle,
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
-        })}
+        options={{ title: '160 Anos', headerShown: false }}
       />
     </Tab.Navigator>
   );
@@ -140,9 +125,11 @@ function AppNavigator() {
         options={{ headerShown: false }}
       />
       {/* Membros */}
+      <AppStack.Screen name="MembersList" component={MembersListScreen} options={{ title: 'Membros' }} />
       <AppStack.Screen name="MemberDetail" component={MemberDetailScreen} options={{ title: '' }} />
       <AppStack.Screen name="AddMember" component={AddMemberScreen} options={{ title: 'Novo Membro' }} />
       {/* Grupos */}
+      <AppStack.Screen name="GroupsList" component={GroupsListScreen} options={{ title: 'Pequenos Grupos' }} />
       <AppStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
       <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
       <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
