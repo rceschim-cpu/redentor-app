@@ -2,11 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Usuários — leitura/escrita do próprio perfil
+    // Usuários — qualquer autenticado pode ler; escrita no próprio perfil
+    // ou por outro autenticado (para admin alterar role de outros usuários)
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-      // Admin pode ler qualquer perfil
-      allow read: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // Membros — leitura para autenticados, escrita para autenticados
