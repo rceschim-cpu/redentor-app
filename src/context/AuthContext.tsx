@@ -67,6 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await loadAppUser(u, true);
         } catch (err) {
           console.error('Erro ao carregar perfil do usuário:', err);
+          // Se falhou, cria perfil mínimo para o usuário não ficar preso
+          setAppUser({
+            uid: u.uid,
+            name: u.displayName || u.email?.split('@')[0] || 'Usuário',
+            email: u.email ?? '',
+            role: 'membro',
+          });
         }
       } else {
         setAppUser(null);

@@ -1,5 +1,6 @@
 import {
   doc,
+  getDoc,
   getDocFromServer,
   setDoc,
   updateDoc,
@@ -15,10 +16,17 @@ import { AppUserProfile, UserRole } from '../types';
 const COL = 'users';
 
 export async function getUserProfile(uid: string): Promise<AppUserProfile | null> {
-  // getDocFromServer ignora cache local — garante dados atualizados do Firestore
-  const snap = await getDocFromServer(doc(db, COL, uid));
-  if (!snap.exists()) return null;
-  return { uid: snap.id, ...snap.data() } as AppUserProfile;
+  try {
+    // Tenta buscar direto do servidor (ignora cache)
+    const snap = await getDocFromServer(doc(db, COL, uid));
+    if (!snap.exists()) return null;
+    return { uid: snap.id, ...snap.data() } as AppUserProfile;
+  } catch {
+    // Fallback para cache local se servidor falhar (ex: regras, offline)
+    const snap = await getDoc(doc(db, COL, uid));
+    if (!snap.exists()) return null;
+    return { uid: snap.id, ...snap.data() } as AppUserProfile;
+  }
 }
 
 export async function createUserProfile(
