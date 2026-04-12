@@ -316,6 +316,8 @@ export function GroupDetailScreen({ route, navigation }: any) {
   const [transferTarget, setTransferTarget] = useState<GroupMembership | null>(null);
   const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [transferring, setTransferring] = useState(false);
+  const [showLeaderPicker, setShowLeaderPicker] = useState(false);
+  const [changingLeader, setChangingLeader] = useState(false);
 
 
   useFocusEffect(
@@ -417,6 +419,21 @@ export function GroupDetailScreen({ route, navigation }: any) {
     }
   };
 
+  const handleLeaderChange = async (m: GroupMembership) => {
+    if (!group || changingLeader) return;
+    setChangingLeader(true);
+    try {
+      await updateGroup(group.id, { leaderId: m.userId, leaderName: m.userName });
+      setGroup((g) => g ? { ...g, leaderId: m.userId, leaderName: m.userName } : g);
+      setShowLeaderPicker(false);
+      showAlert('Líder alterado!', `${m.userName} é o novo líder do grupo.`);
+    } catch {
+      showAlert('Erro', 'Não foi possível alterar o líder.');
+    } finally {
+      setChangingLeader(false);
+    }
+  };
+
   const handleGroupDelete = () => {
     const doDelete = async () => {
       try {
@@ -485,7 +502,42 @@ export function GroupDetailScreen({ route, navigation }: any) {
           {/* Informações */}
           <Card style={{ marginBottom: 12 }}>
             <Text style={styles.cardTitle}>INFORMAÇÕES</Text>
-            <DetailRow label="Líder" value={group.leaderName} accent />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <DetailRow label="Líder" value={group.leaderName} accent />
+              {isManager && (
+                <TouchableOpacity
+                  onPress={() => setShowLeaderPicker((v) => !v)}
+                  style={styles.changeLeaderBtn}
+                >
+                  <Text style={styles.changeLeaderBtnText}>
+                    {showLeaderPicker ? 'Cancelar' : 'Trocar'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {showLeaderPicker && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={[styles.cardTitle, { marginBottom: 6 }]}>ESCOLHER NOVO LÍDER</Text>
+                {members.filter((m) => m.userId !== group.leaderId && m.status === 'aprovado').length === 0 ? (
+                  <Text style={{ fontSize: 13, color: Colors.textMuted }}>Nenhum membro disponível para ser líder.</Text>
+                ) : (
+                  members
+                    .filter((m) => m.userId !== group.leaderId && m.status === 'aprovado')
+                    .map((m) => (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={styles.leaderOption}
+                        onPress={() => handleLeaderChange(m)}
+                        disabled={changingLeader}
+                      >
+                        <Avatar name={m.userName} size={30} index={0} />
+                        <Text style={styles.leaderOptionText}>{m.userName}</Text>
+                        {changingLeader && <ActivityIndicator size="small" color={Colors.primary} />}
+                      </TouchableOpacity>
+                    ))
+                )}
+              </View>
+            )}
             {group.coLeaderName && <DetailRow label="Co-líder" value={group.coLeaderName} />}
             {group.location && <DetailRow label="Local" value={group.location} />}
             {group.neighborhood && <DetailRow label="Bairro" value={group.neighborhood} />}
@@ -1009,4 +1061,25 @@ const styles = StyleSheet.create({
   },
   materialDownloadIcon: { fontSize: 14, color: Colors.primary, fontWeight: '700' },
   materialDeleteIcon: { fontSize: 12, color: Colors.danger, fontWeight: '700' },
+  changeLeaderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  changeLeaderBtnText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+  leaderOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 6,
+  },
+  leaderOptionText: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
 });
