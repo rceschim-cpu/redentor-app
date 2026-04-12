@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   appUser: AppUserProfile | null;
   loading: boolean;
+  isNewUser: boolean;
   refreshAppUser: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   appUser: null,
   loading: true,
+  isNewUser: false,
   refreshAppUser: async () => {},
 });
 
@@ -23,8 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // true APENAS quando o perfil foi criado nesta sessão (primeiro login real)
+  const [isNewUser, setIsNewUser] = useState(false);
 
-  const loadAppUser = async (firebaseUser: User) => {
+  const loadAppUser = async (firebaseUser: User, freshLogin = false) => {
     let profile = await getUserProfile(firebaseUser.uid);
     if (!profile) {
       // Primeiro login — cria perfil com role padrão membro
@@ -36,24 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await createUserProfile(firebaseUser.uid, newProfile);
       profile = await getUserProfile(firebaseUser.uid);
+      setIsNewUser(true); // só aqui: perfil criado agora nesta sessão
     } else {
+      if (freshLogin) setIsNewUser(false); // usuário já existe, nunca bloquear
+
       const updates: Partial<AppUserProfile> = {};
-
-      // Se já tem memberId mas não tem profileComplete, corrige automaticamente
-      if (profile.memberId && !profile.profileComplete) {
-        updates.profileComplete = true;
-      }
-
-      // Sincroniza foto do Google se mudou
       if (firebaseUser.photoURL && profile.photoURL !== firebaseUser.photoURL) {
         updates.photoURL = firebaseUser.photoURL;
       }
-
-      // Só sincroniza nome do Google se ainda não completou o perfil
-      if (!profile.profileComplete && !profile.memberId && firebaseUser.displayName && profile.name !== firebaseUser.displayName) {
-        updates.name = firebaseUser.displayName;
-      }
-
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(firebaseUser.uid, updates);
         profile = { ...profile, ...updates };
@@ -61,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setAppUser(profile);
     if (profile) {
-      registerExpoPushToken(profile.uid).catch(() => {}); // best-effort, don't block
+      registerExpoPushToken(profile.uid).catch(() => {});
     }
   };
 
@@ -70,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
       if (u) {
         try {
-          await loadAppUser(u);
+          await loadAppUser(u, true);
         } catch (err) {
           console.error('Erro ao carregar perfil do usuário:', err);
         }
@@ -83,11 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshAppUser = useCallback(async () => {
-    if (user) await loadAppUser(user);
+    if (user) {
+      setIsNewUser(false); // após completar/pular perfil, nunca mais bloquear
+      await loadAppUser(user);
+    }
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, appUser, loading, refreshAppUser }}>
+    <AuthContext.Provider value={{ user, appUser, loading, isNewUser, refreshAppUser }}>
       {children}
     </AuthContext.Provider>
   );

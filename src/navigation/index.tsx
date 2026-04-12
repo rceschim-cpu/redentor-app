@@ -160,7 +160,7 @@ function AppNavigator() {
 }
 
 export default function RootNavigator() {
-  const { user, appUser, loading } = useAuth();
+  const { user, appUser, loading, isNewUser } = useAuth();
 
   if (loading) {
     return (
@@ -174,7 +174,7 @@ export default function RootNavigator() {
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <RootStack.Screen name="Login" component={LoginScreen} />
-      ) : !appUser?.profileComplete ? (
+      ) : isNewUser ? (
         <RootStack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
       ) : (
         <RootStack.Screen name="Main" component={AppNavigator} />
