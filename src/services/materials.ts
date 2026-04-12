@@ -5,7 +5,6 @@ import {
   deleteDoc,
   doc,
   query,
-  orderBy,
   where,
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -15,13 +14,11 @@ import { GroupMaterial } from '../types';
 const COL = 'group_materials';
 
 export async function getMaterials(groupId: string): Promise<GroupMaterial[]> {
-  const q = query(
-    collection(db, COL),
-    where('groupId', '==', groupId),
-    orderBy('uploadedAt', 'desc')
-  );
+  // Ordenação no cliente para evitar índice composto no Firestore
+  const q = query(collection(db, COL), where('groupId', '==', groupId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as GroupMaterial));
+  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as GroupMaterial));
+  return docs.sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? ''));
 }
 
 export async function uploadMaterial(
