@@ -23,6 +23,9 @@ import { maskPhone, maskDate } from '../utils/masks';
 import { showAlert } from '../utils/alert';
 import { MARITAL_OPTIONS, STATUS_OPTIONS, MARITAL_LABEL } from '../constants/memberOptions';
 import { useFocusEffect } from '@react-navigation/native';
+import { findUserByMemberId } from '../services/notifications';
+import { getUserProfile, updateUserProfile, unlinkMemberFromUser } from '../services/userProfile';
+import { AppUserProfile, UserRole } from '../types';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
@@ -122,6 +125,13 @@ export function MembersListScreen({ navigation }: any) {
 }
 
 // ─── Detalhe do Membro ────────────────────────────────────────────────────
+const ROLE_OPTIONS: Array<{ key: UserRole; label: string }> = [
+  { key: 'membro', label: 'Membro' },
+  { key: 'lider', label: 'Líder' },
+  { key: 'pastor', label: 'Pastor' },
+  { key: 'administrador', label: 'Admin' },
+];
+
 export function MemberDetailScreen({ route, navigation }: any) {
   const { memberId } = route.params;
   const { appUser } = useAuth();
@@ -129,14 +139,17 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupLeaderId, setGroupLeaderId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
   const canEdit = canEditMember(appUser?.role ?? 'membro', appUser?.uid ?? '', groupLeaderId);
   const canDelete = appUser?.role === 'administrador';
+  const isAdmin = appUser?.role === 'administrador';
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       getMember(memberId)
-        .then((m) => {
+        .then(async (m) => {
           setMember(m);
           if (m) navigation.setOptions({ title: m.name });
           if (m?.groupId) {
@@ -145,8 +158,22 @@ export function MemberDetailScreen({ route, navigation }: any) {
               setGroupLeaderId(g?.leaderId);
             }).catch(() => {});
           }
+          // Load linked user account
+          if (m?.id) {
+            try {
+              const uid = await findUserByMemberId(m.id);
+              if (uid) {
+                const profile = await getUserProfile(uid);
+                setLinkedUser(profile);
+              } else {
+                setLinkedUser(null);
+              }
+            } catch {
+              setLinkedUser(null);
+            }
+          }
         })
-        .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
+        .catch(() => showAlert('Erro', 'Membro não encontrado.'))
         .finally(() => setLoading(false));
     }, [memberId])
   );
@@ -155,9 +182,12 @@ export function MemberDetailScreen({ route, navigation }: any) {
     const doDelete = async () => {
       try {
         await deleteMember(member!.id);
+        if (linkedUser) {
+          await unlinkMemberFromUser(linkedUser.uid).catch(() => {});
+        }
         navigation.goBack();
       } catch {
-        Alert.alert('Erro', 'Não foi possível excluir o membro.');
+        showAlert('Erro', 'Não foi possível excluir o membro.');
       }
     };
     if (Platform.OS === 'web') {
@@ -169,6 +199,19 @@ export function MemberDetailScreen({ route, navigation }: any) {
         `Tem certeza que deseja excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
         [{ text: 'Cancelar', style: 'cancel' }, { text: 'Excluir', style: 'destructive', onPress: doDelete }]
       );
+    }
+  };
+
+  const handleRoleChange = async (role: UserRole) => {
+    if (!linkedUser || savingRole) return;
+    setSavingRole(true);
+    try {
+      await updateUserProfile(linkedUser.uid, { role });
+      setLinkedUser((prev) => prev ? { ...prev, role } : prev);
+    } catch {
+      showAlert('Erro', 'Não foi possível alterar o nível de acesso.');
+    } finally {
+      setSavingRole(false);
     }
   };
 
@@ -235,6 +278,37 @@ export function MemberDetailScreen({ route, navigation }: any) {
             {member.city && <DetailRow label="Cidade" value={member.city} />}
           </Card>
         )}
+        {isAdmin && linkedUser && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>ACESSO AO APP</Text>
+            <DetailRow label="E-mail de acesso" value={linkedUser.email || '—'} />
+            <Text style={[styles.formLabel, { marginTop: 10, marginBottom: 6 }]}>NÍVEL DE ACESSO</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {ROLE_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => handleRoleChange(opt.key)}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 7,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: linkedUser.role === opt.key ? Colors.primary : Colors.border,
+                    backgroundColor: linkedUser.role === opt.key ? Colors.primary : Colors.surface,
+                    opacity: savingRole ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: linkedUser.role === opt.key ? '#fff' : Colors.textSecondary,
+                  }}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Card>
+        )}
+
         {member.phone ? (
           <PrimaryButton
             label="📱 Entrar em Contato via WhatsApp"

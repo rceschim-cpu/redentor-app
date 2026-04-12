@@ -60,3 +60,8 @@ export async function getAllUsers(): Promise<AppUserProfile[]> {
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile));
 }
+
+export async function unlinkMemberFromUser(uid: string): Promise<void> {
+  const { deleteField } = await import('firebase/firestore');
+  await updateDoc(doc(db, COL, uid), { memberId: deleteField() });
+}

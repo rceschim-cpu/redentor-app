@@ -73,7 +73,6 @@ const MODULES: ModuleItem[] = [
   { icon: 'notifications-outline',  label: 'Notificações',   screen: 'Notifications' },
   { icon: 'car-outline',            label: 'Estacionamento', screen: 'Parking' },
   { icon: 'settings-outline',       label: 'Configurações',  screen: 'Settings' },
-  { icon: 'person-outline',         label: 'Usuários',       screen: 'Users',         adminOnly: true },
 ];
 
 export default function DashboardScreen({ navigation }: any) {
@@ -118,14 +117,6 @@ export default function DashboardScreen({ navigation }: any) {
             />
           </View>
           <View style={styles.heroActions}>
-            {isAdmin && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Users')}
-                style={styles.adminBtn}
-              >
-                <Text style={styles.adminBtnIcon}>⚙</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               onPress={() => navigation.navigate('Notifications')}
               style={styles.adminBtn}
