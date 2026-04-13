@@ -1,8 +1,20 @@
 // bible-api.com — gratuito, sem chave de API
-// Tradução: Almeida Revisada e Corrigida (português)
-
 const BASE = 'https://bible-api.com';
-const TRANSLATION = 'almeida';
+
+export interface BibleTranslation {
+  id: string;
+  label: string;
+  language: string;
+}
+
+export const TRANSLATIONS: BibleTranslation[] = [
+  { id: 'almeida',    label: 'Almeida Revisada e Corrigida', language: 'Português' },
+  { id: 'kjv',        label: 'King James Version',           language: 'English' },
+  { id: 'web',        label: 'World English Bible',          language: 'English' },
+  { id: 'bbe',        label: 'Bible in Basic English',       language: 'English' },
+  { id: 'darby',      label: 'Darby Translation',            language: 'English' },
+  { id: 'asvn',       label: 'American Standard Version',    language: 'English' },
+];
 
 export interface BibleVerse {
   book_id: string;
@@ -18,8 +30,8 @@ export interface BibleChapter {
   translation_name: string;
 }
 
-export async function getChapter(book: string, chapter: number): Promise<BibleChapter> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(book)}+${chapter}?translation=${TRANSLATION}&verse_numbers=true`);
+export async function getChapter(book: string, chapter: number, translation = 'almeida'): Promise<BibleChapter> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(book)}+${chapter}?translation=${translation}&verse_numbers=true`);
   if (!res.ok) throw new Error(`Erro ao carregar ${book} ${chapter}`);
   return res.json();
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { getChapter, BIBLE_BOOKS, BibleBook, BibleVerse } from '../services/bible';
+import { getChapter, BIBLE_BOOKS, BibleBook, BibleVerse, TRANSLATIONS, BibleTranslation } from '../services/bible';
 import { showAlert } from '../utils/alert';
 
 type Screen = 'books' | 'chapters' | 'reading';
@@ -24,6 +24,8 @@ export default function BibleScreen() {
   const [verses, setVerses] = useState<BibleVerse[]>([]);
   const [loading, setLoading] = useState(false);
   const [testament, setTestament] = useState<'AT' | 'NT' | 'todos'>('todos');
+  const [translation, setTranslation] = useState<BibleTranslation>(TRANSLATIONS[0]);
+  const [showTranslationPicker, setShowTranslationPicker] = useState(false);
   const readingScrollRef = useRef<ScrollView>(null);
 
   const filteredBooks = BIBLE_BOOKS.filter((b) => {
@@ -32,11 +34,12 @@ export default function BibleScreen() {
     return matchSearch && matchTestament;
   });
 
-  const loadChapter = async (book: BibleBook, chapter: number) => {
+  const loadChapter = async (book: BibleBook, chapter: number, trans?: BibleTranslation) => {
     setLoading(true);
     setVerses([]);
+    const t = trans ?? translation;
     try {
-      const data = await getChapter(book.id, chapter);
+      const data = await getChapter(book.id, chapter, t.id);
       setVerses(data.verses ?? []);
       setScreen('reading');
       setTimeout(() => readingScrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
@@ -163,9 +166,14 @@ export default function BibleScreen() {
         <TouchableOpacity onPress={goBack} style={styles.readingBackBtn}>
           <Text style={styles.readingBackText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.readingTitle}>
-          {selectedBook?.name} {selectedChapter}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.readingTitle}>
+            {selectedBook?.name} {selectedChapter}
+          </Text>
+          <TouchableOpacity onPress={() => setShowTranslationPicker(true)}>
+            <Text style={styles.translationLabel}>{translation.label} ›</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.readingNav}>
           <TouchableOpacity
             onPress={prevChapter}
@@ -183,6 +191,46 @@ export default function BibleScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Modal seletor de tradução */}
+      <Modal
+        visible={showTranslationPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTranslationPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowTranslationPicker(false)}
+        />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Versão da Bíblia</Text>
+          {TRANSLATIONS.map((t) => (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.translationOption, translation.id === t.id && styles.translationOptionActive]}
+              onPress={() => {
+                setTranslation(t);
+                setShowTranslationPicker(false);
+                if (selectedBook) loadChapter(selectedBook, selectedChapter, t);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.translationOptionLabel, translation.id === t.id && styles.translationOptionLabelActive]}>
+                  {t.label}
+                </Text>
+                <Text style={styles.translationOptionLang}>{t.language}</Text>
+              </View>
+              {translation.id === t.id && (
+                <Text style={styles.translationCheck}>✓</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+          <View style={{ height: 24 }} />
+        </View>
+      </Modal>
 
       {loading ? (
         <View style={styles.center}>
@@ -351,5 +399,71 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 26,
+  },
+  translationLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 1,
+  },
+  // Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalSheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: Spacing.lg,
+    paddingTop: 12,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  translationOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    marginBottom: 8,
+    backgroundColor: Colors.background,
+  },
+  translationOptionActive: {
+    borderColor: Colors.primary,
+    backgroundColor: '#EBF1FA',
+  },
+  translationOptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  translationOptionLabelActive: {
+    color: Colors.primary,
+  },
+  translationOptionLang: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  translationCheck: {
+    fontSize: 16,
+    color: Colors.primary,
+    fontWeight: '700',
   },
 });
