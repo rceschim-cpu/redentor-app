@@ -141,13 +141,16 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Banner carousel */}
         <ScrollView
           horizontal
-          pagingEnabled
           showsHorizontalScrollIndicator={false}
           decelerationRate="fast"
+          snapToInterval={BANNER_WIDTH}
+          snapToAlignment="start"
+          disableIntervalMomentum
           style={styles.bannerScroll}
-          onMomentumScrollEnd={(e) => {
+          scrollEventThrottle={16}
+          onScroll={(e) => {
             const index = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
-            setActiveBanner(index);
+            setActiveBanner(Math.max(0, Math.min(index, BANNERS.length - 1)));
           }}
         >
           {BANNERS.map((banner) => (
