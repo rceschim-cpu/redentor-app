@@ -171,7 +171,15 @@ export default function DashboardScreen({ navigation }: any) {
               <TouchableOpacity
                 key={banner.id}
                 activeOpacity={0.85}
-                style={[styles.bannerSlide, { width: BANNER_WIDTH, backgroundColor: banner.color }]}
+                style={[
+                  styles.bannerSlide,
+                  {
+                    width: BANNER_WIDTH,
+                    backgroundColor: imageURL ? 'transparent' : banner.color,
+                    borderWidth: imageURL ? 3 : 0,
+                    borderColor: banner.color,
+                  },
+                ]}
                 onPress={() =>
                   banner.screen
                     ? navigation.navigate(banner.screen)
@@ -181,19 +189,18 @@ export default function DashboardScreen({ navigation }: any) {
                 {imageURL ? (
                   <Image
                     source={{ uri: imageURL }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, { borderRadius: Radius.lg }]}
                     resizeMode="cover"
                   />
-                ) : null}
-                {/* overlay para legibilidade quando há imagem */}
-                {imageURL && (
-                  <View style={[StyleSheet.absoluteFill, styles.bannerOverlay]} />
+                ) : (
+                  <>
+                    <Text style={styles.bannerIcon}>{banner.icon}</Text>
+                    <View style={styles.bannerText}>
+                      <Text style={styles.bannerTitle}>{banner.title}</Text>
+                      <Text style={styles.bannerSub}>{banner.sub}</Text>
+                    </View>
+                  </>
                 )}
-                <Text style={styles.bannerIcon}>{banner.icon}</Text>
-                <View style={styles.bannerText}>
-                  <Text style={styles.bannerTitle}>{banner.title}</Text>
-                  <Text style={styles.bannerSub}>{banner.sub}</Text>
-                </View>
               </TouchableOpacity>
             );
           })}
@@ -332,10 +339,6 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 60,
     overflow: 'hidden',
-  },
-  bannerOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: Radius.lg,
   },
   bannerIcon: { fontSize: 26 },
   bannerText: { flex: 1 },

@@ -13,7 +13,7 @@ import { Colors, Spacing, Radius } from '../theme';
 import { Card } from '../components';
 import { showAlert } from '../utils/alert';
 import { useAuth } from '../context/AuthContext';
-import { getAllBanners, updateBannerImage, BannerData } from '../services/banners';
+import { getAllBanners, updateBannerImage, deleteBannerImage, BannerData } from '../services/banners';
 import { uploadToCloudinary } from '../services/cloudinary';
 
 const BANNER_META = [
@@ -103,6 +103,20 @@ export default function BannersScreen() {
   const cancelPending = (id: string) =>
     update(id, { pendingFile: null, pendingURL: null });
 
+  const removeBanner = async (id: string) => {
+    update(id, { saving: true });
+    try {
+      await deleteBannerImage(id);
+      update(id, {
+        data: { ...banners[id].data, imageURL: undefined },
+        saving: false,
+      });
+    } catch {
+      update(id, { saving: false });
+      showAlert('Erro', 'Não foi possível remover a imagem.');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -181,14 +195,28 @@ export default function BannersScreen() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.btnUpload}
-                  onPress={() => pickFile(id)}
-                >
-                  <Text style={styles.btnUploadText}>
-                    {currentURL ? '🔄  Trocar imagem' : '＋  Adicionar imagem'}
-                  </Text>
-                </TouchableOpacity>
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity
+                    style={styles.btnUpload}
+                    onPress={() => pickFile(id)}
+                    disabled={banner.saving}
+                  >
+                    <Text style={styles.btnUploadText}>
+                      {currentURL ? '🔄  Trocar imagem' : '＋  Adicionar imagem'}
+                    </Text>
+                  </TouchableOpacity>
+                  {currentURL && (
+                    <TouchableOpacity
+                      style={styles.btnRemove}
+                      onPress={() => removeBanner(id)}
+                      disabled={banner.saving}
+                    >
+                      <Text style={styles.btnRemoveText}>
+                        {banner.saving ? 'Removendo...' : '✕  Remover imagem'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
           </Card>
@@ -280,4 +308,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnUploadText: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
+  btnRemove: {
+    borderWidth: 1.5,
+    borderColor: Colors.danger,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  btnRemoveText: { color: Colors.danger, fontWeight: '600', fontSize: 13 },
 });

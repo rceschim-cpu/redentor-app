@@ -31,3 +31,8 @@ export async function updateBannerImage(
     updatedBy,
   });
 }
+
+export async function deleteBannerImage(bannerId: string): Promise<void> {
+  const { deleteField } = await import('firebase/firestore');
+  await setDoc(doc(db, COL, bannerId), { imageURL: deleteField() }, { merge: true });
+}
