@@ -184,10 +184,10 @@ export default function DashboardScreen({ navigation }: any) {
               style={[
                 styles.indicatorDot,
                 {
-                  backgroundColor: i === activeBanner ? b.color : Colors.border,
+                  backgroundColor: b.color,
                   flex: i === activeBanner ? 3 : 1,
                   height: i === activeBanner ? 6 : 4,
-                  opacity: i === activeBanner ? 1 : 0.5,
+                  opacity: i === activeBanner ? 1 : 0.3,
                 },
               ]}
               onPress={() => {
