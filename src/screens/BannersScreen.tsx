@@ -37,22 +37,21 @@ export default function BannersScreen() {
   const [banners, setBanners] = useState<Record<string, BannerState>>({});
 
   useEffect(() => {
-    getAllBanners()
-      .then((all) => {
-        const state: Record<string, BannerState> = {};
-        BANNER_META.forEach(({ id }) => {
-          state[id] = {
-            data: all[id] ?? {},
-            pendingFile: null,
-            pendingURL: null,
-            uploading: false,
-            saving: false,
-          };
-        });
-        setBanners(state);
-      })
-      .catch(() => showAlert('Erro', 'Não foi possível carregar os banners.'))
-      .finally(() => setLoading(false));
+    (async () => {
+      const all = await getAllBanners().catch(() => ({} as Record<string, any>));
+      const state: Record<string, BannerState> = {};
+      BANNER_META.forEach(({ id }) => {
+        state[id] = {
+          data: all[id] ?? {},
+          pendingFile: null,
+          pendingURL: null,
+          uploading: false,
+          saving: false,
+        };
+      });
+      setBanners(state);
+      setLoading(false);
+    })();
   }, []);
 
   const update = (id: string, patch: Partial<BannerState>) =>
