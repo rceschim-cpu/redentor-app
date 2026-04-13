@@ -49,6 +49,11 @@ jobs:
           sed -i 's|href="/assets/|href="/redentor-app/assets/|g' dist/index.html
           find dist/_expo -name "*.js" -exec sed -i 's|"/assets/|"/redentor-app/assets/|g' {} \;
 
+      - name: Fix title and favicon
+        run: |
+          sed -i 's|<title>.*</title>|<title>Comunidade do Redentor</title>|g' dist/index.html
+          sed -i '/<\/head>/i \    <link rel="icon" type="image/png" href="/redentor-app/assets/logo.png" />\n    <link rel="shortcut icon" type="image/png" href="/redentor-app/assets/logo.png" />' dist/index.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
