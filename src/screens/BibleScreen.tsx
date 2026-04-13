@@ -39,12 +39,12 @@ export default function BibleScreen() {
     setVerses([]);
     const t = trans ?? translation;
     try {
-      const data = await getChapter(book.id, chapter, t.id);
+      const data = await getChapter(book.usfm, chapter, t);
       setVerses(data.verses ?? []);
       setScreen('reading');
       setTimeout(() => readingScrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
-    } catch {
-      showAlert('Erro', 'Não foi possível carregar o capítulo. Verifique sua conexão.');
+    } catch (err: any) {
+      showAlert('Erro', err?.message ?? 'Não foi possível carregar o capítulo. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }
