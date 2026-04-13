@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,18 +54,24 @@ function BackBtn({ onPress }: { onPress: () => void }) {
   );
 }
 
-const TAB_ICONS: Record<string, string> = {
-  Dashboard: '⌂',
-  Members: '●●',
-  SmallGroups: '▲',
-  Celebration: '✦',
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
+  Dashboard:   { active: 'home',          inactive: 'home-outline' },
+  Members:     { active: 'person',        inactive: 'person-outline' },
+  SmallGroups: { active: 'people',        inactive: 'people-outline' },
+  Celebration: { active: 'star',          inactive: 'star-outline' },
 };
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const icons = TAB_ICONS[name];
+  if (!icons) return null;
   return (
-    <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4, color: Colors.primary }}>
-      {TAB_ICONS[name]}
-    </Text>
+    <Ionicons
+      name={focused ? icons.active : icons.inactive}
+      size={24}
+      color={focused ? Colors.primary : Colors.textSecondary}
+    />
   );
 }
 
