@@ -83,6 +83,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const bannerScrollRef = useRef<ScrollView>(null);
 
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
 
@@ -140,6 +141,7 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* Banner carousel */}
         <ScrollView
+          ref={bannerScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           decelerationRate="fast"
@@ -176,8 +178,9 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Indicadores do arco vitral */}
         <View style={styles.indicators}>
           {BANNERS.map((b, i) => (
-            <View
+            <TouchableOpacity
               key={b.id}
+              activeOpacity={0.7}
               style={[
                 styles.indicatorDot,
                 {
@@ -187,6 +190,10 @@ export default function DashboardScreen({ navigation }: any) {
                   opacity: i === activeBanner ? 1 : 0.5,
                 },
               ]}
+              onPress={() => {
+                setActiveBanner(i);
+                bannerScrollRef.current?.scrollTo({ x: i * BANNER_WIDTH, animated: true });
+              }}
             />
           ))}
         </View>
