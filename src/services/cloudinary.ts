@@ -1,7 +1,7 @@
 // Cloudinary — upload gratuito de arquivos (sem Firebase Storage)
 // Configurar com os valores do painel em cloudinary.com
-const CLOUD_NAME = 'SEU_CLOUD_NAME';   // ex: 'dxyz123abc'
-const UPLOAD_PRESET = 'SEU_PRESET';    // ex: 'redentor_unsigned'
+const CLOUD_NAME = 'djjzrrez0';
+const UPLOAD_PRESET = 'materiais_redentor';
 
 export async function uploadToCloudinary(
   file: File
