@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { getMembers } from '../services/members';
 import { getGroups } from '../services/groups';
 import { getUnreadCount } from '../services/notifications';
+import { getAllBanners } from '../services/banners';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - Spacing.lg * 2;
@@ -83,6 +84,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bannerImages, setBannerImages] = useState<Record<string, string>>({});
   const bannerScrollRef = useRef<ScrollView>(null);
 
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
@@ -94,6 +96,13 @@ export default function DashboardScreen({ navigation }: any) {
     getGroups()
       .then((g) => setGroupCount(g.length.toString()))
       .catch(() => setGroupCount('—'));
+    getAllBanners()
+      .then((all) => {
+        const imgs: Record<string, string> = {};
+        Object.entries(all).forEach(([id, b]) => { if (b.imageURL) imgs[id] = b.imageURL; });
+        setBannerImages(imgs);
+      })
+      .catch(() => {});
   }, []);
 
   useFocusEffect(
@@ -155,24 +164,38 @@ export default function DashboardScreen({ navigation }: any) {
             setActiveBanner(Math.max(0, Math.min(index, BANNERS.length - 1)));
           }}
         >
-          {BANNERS.map((banner) => (
-            <TouchableOpacity
-              key={banner.id}
-              activeOpacity={0.85}
-              style={[styles.bannerSlide, { width: BANNER_WIDTH, backgroundColor: banner.color }]}
-              onPress={() =>
-                banner.screen
-                  ? navigation.navigate(banner.screen)
-                  : Alert.alert(banner.title, banner.sub)
-              }
-            >
-              <Text style={styles.bannerIcon}>{banner.icon}</Text>
-              <View style={styles.bannerText}>
-                <Text style={styles.bannerTitle}>{banner.title}</Text>
-                <Text style={styles.bannerSub}>{banner.sub}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {BANNERS.map((banner) => {
+            const imageURL = bannerImages[banner.id];
+            return (
+              <TouchableOpacity
+                key={banner.id}
+                activeOpacity={0.85}
+                style={[styles.bannerSlide, { width: BANNER_WIDTH, backgroundColor: banner.color }]}
+                onPress={() =>
+                  banner.screen
+                    ? navigation.navigate(banner.screen)
+                    : Alert.alert(banner.title, banner.sub)
+                }
+              >
+                {imageURL ? (
+                  <Image
+                    source={{ uri: imageURL }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
+                  />
+                ) : null}
+                {/* overlay para legibilidade quando há imagem */}
+                {imageURL && (
+                  <View style={[StyleSheet.absoluteFill, styles.bannerOverlay]} />
+                )}
+                <Text style={styles.bannerIcon}>{banner.icon}</Text>
+                <View style={styles.bannerText}>
+                  <Text style={styles.bannerTitle}>{banner.title}</Text>
+                  <Text style={styles.bannerSub}>{banner.sub}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Indicadores do arco vitral */}
@@ -307,6 +330,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     minHeight: 60,
+    overflow: 'hidden',
+  },
+  bannerOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: Radius.lg,
   },
   bannerIcon: { fontSize: 26 },
   bannerText: { flex: 1 },

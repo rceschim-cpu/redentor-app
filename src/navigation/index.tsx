@@ -19,6 +19,7 @@ import EventsScreen from '../screens/EventsScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import GroupMaterialsScreen from '../screens/GroupMaterialsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import BannersScreen from '../screens/BannersScreen';
 import {
   MembersListScreen,
   MemberDetailScreen,
@@ -142,6 +143,7 @@ function AppNavigator() {
       <AppStack.Screen name="Users" component={UsersScreen} options={{ title: 'Usuários' }} />
       <AppStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configurações' }} />
       <AppStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
+      <AppStack.Screen name="Banners" component={BannersScreen} options={{ title: 'Banners da Home' }} />
     </AppStack.Navigator>
   );
 }

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Colors, Spacing, Radius } from '../theme';
 import { Card } from '../components';
 import { useFontScale, FontSizePref, FONT_SCALES, FONT_PREF_LABELS } from '../context/FontScaleContext';
+import { useAuth } from '../context/AuthContext';
 
 const SIZE_OPTIONS: { key: FontSizePref; desc: string }[] = [
   { key: 'normal',  desc: 'Tamanho padrão do app' },
@@ -10,8 +11,10 @@ const SIZE_OPTIONS: { key: FontSizePref; desc: string }[] = [
   { key: 'extra',   desc: 'Para melhor visibilidade' },
 ];
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }: any) {
   const { pref, setPref } = useFontScale();
+  const { appUser } = useAuth();
+  const isStaff = appUser?.role === 'administrador' || appUser?.role === 'pastor';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -64,6 +67,26 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
+      {isStaff && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>CONTEÚDO</Text>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => navigation.navigate('Banners')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.linkLeft}>
+              <Text style={styles.linkIcon}>🖼️</Text>
+              <View>
+                <Text style={styles.linkLabel}>Banners da Home</Text>
+                <Text style={styles.linkDesc}>Atualizar imagens do carrossel principal</Text>
+              </View>
+            </View>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
+        </Card>
+      )}
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -102,4 +125,13 @@ const styles = StyleSheet.create({
   previewHeading: { fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Inter_700Bold' },
   previewBody: { color: Colors.textSecondary, lineHeight: 22 },
   previewSmall: { fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' },
+  linkRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  linkLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  linkIcon: { fontSize: 22 },
+  linkLabel: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  linkDesc: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  linkArrow: { fontSize: 22, color: Colors.textMuted },
 });
