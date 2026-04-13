@@ -178,9 +178,10 @@ export default function DashboardScreen({ navigation }: any) {
               style={[
                 styles.indicatorDot,
                 {
-                  backgroundColor: b.color,
-                  width: i === activeBanner ? 18 : 6,
-                  opacity: i === activeBanner ? 1 : 0.35,
+                  backgroundColor: i === activeBanner ? b.color : Colors.border,
+                  flex: i === activeBanner ? 3 : 1,
+                  height: i === activeBanner ? 6 : 4,
+                  opacity: i === activeBanner ? 1 : 0.5,
                 },
               ]}
             />
@@ -303,14 +304,14 @@ const styles = StyleSheet.create({
   bannerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   indicators: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
     gap: 5,
-    marginTop: 10,
+    marginTop: 12,
     marginBottom: 2,
+    width: '50%',
+    alignSelf: 'center',
   },
   indicatorDot: {
-    height: 6,
     borderRadius: 3,
   },
   iconGrid: {
