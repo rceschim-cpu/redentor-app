@@ -71,6 +71,7 @@ const MODULES: ModuleItem[] = [
   { icon: 'calendar-outline',       label: 'Eventos',        screen: 'Events' },
   { icon: 'play-circle-outline',    label: 'Cultos',         screen: 'Cultos' },
   { icon: 'ribbon-outline',         label: '160 Anos',       screen: 'Celebration' },
+  { icon: 'book-outline',            label: 'Bíblia',         screen: 'Bible' },
   { icon: 'notifications-outline',  label: 'Notificações',   screen: 'Notifications' },
   { icon: 'car-outline',            label: 'Estacionamento', screen: 'Parking' },
   { icon: 'settings-outline',       label: 'Configurações',  screen: 'Settings' },

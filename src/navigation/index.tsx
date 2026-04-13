@@ -20,6 +20,7 @@ import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import GroupMaterialsScreen from '../screens/GroupMaterialsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import BannersScreen from '../screens/BannersScreen';
+import BibleScreen from '../screens/BibleScreen';
 import {
   MembersListScreen,
   MemberDetailScreen,
@@ -144,6 +145,7 @@ function AppNavigator() {
       <AppStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configurações' }} />
       <AppStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
       <AppStack.Screen name="Banners" component={BannersScreen} options={{ title: 'Banners da Home' }} />
+      <AppStack.Screen name="Bible" component={BibleScreen} options={{ title: 'Bíblia' }} />
     </AppStack.Navigator>
   );
 }
