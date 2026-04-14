@@ -97,17 +97,19 @@ export default function DashboardScreen({ navigation }: any) {
     getGroups()
       .then((g) => setGroupCount(g.length.toString()))
       .catch(() => setGroupCount('—'));
-    getAllBanners()
-      .then((all) => {
-        const imgs: Record<string, string> = {};
-        Object.entries(all).forEach(([id, b]) => { if (b.imageURL) imgs[id] = b.imageURL; });
-        setBannerImages(imgs);
-      })
-      .catch(() => {});
   }, []);
 
   useFocusEffect(
     useCallback(() => {
+      // Recarrega banners toda vez que a tela volta ao foco
+      getAllBanners()
+        .then((all) => {
+          const imgs: Record<string, string> = {};
+          Object.entries(all).forEach(([id, b]) => { if (b.imageURL) imgs[id] = b.imageURL; });
+          setBannerImages(imgs);
+        })
+        .catch(() => {});
+
       if (appUser?.uid) {
         getUnreadCount(appUser.uid)
           .then(setUnreadCount)
