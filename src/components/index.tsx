@@ -94,11 +94,13 @@ interface ButtonProps {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'ghost';
+  style?: any;
+  disabled?: boolean;
 }
-export const PrimaryButton = ({ label, onPress, variant = 'primary' }: ButtonProps) => (
+export const PrimaryButton = ({ label, onPress, variant = 'primary', style, disabled }: ButtonProps) => (
   <TouchableOpacity
-    onPress={onPress}
-    style={[styles.button, variant === 'ghost' && styles.buttonGhost]}
+    onPress={disabled ? undefined : onPress}
+    style={[styles.button, variant === 'ghost' && styles.buttonGhost, disabled && { opacity: 0.5 }, style]}
     activeOpacity={0.8}
   >
     <Text style={[styles.buttonText, variant === 'ghost' && styles.buttonTextGhost]}>

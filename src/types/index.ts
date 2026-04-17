@@ -37,6 +37,43 @@ export interface AppNotification {
   };
 }
 
+// ─── Redentor Kids / Ponte ────────────────────────────────────────────────────
+export type KidsAgeGroup = '0-3' | '4-6' | '7-9' | '10-12';
+export type KidsModule   = 'kids' | 'ponte';
+
+export interface Guardian {
+  name: string;
+  phone: string;         // com DDD
+  relationship: string;  // pai, mãe, avó, etc.
+}
+
+export interface Child {
+  id: string;
+  name: string;
+  birthDate: string;     // DD/MM/YYYY
+  ageGroup: KidsAgeGroup;
+  module: KidsModule;
+  status: 'ativo' | 'inativo';
+  photoURL?: string;
+  guardians: Guardian[];
+  lastAttendance?: string;  // ISO date da última presença
+  createdAt: string;
+  observations?: string;
+}
+
+export interface ChildAttendance {
+  id: string;
+  childId: string;
+  childName: string;
+  date: string;          // YYYY-MM-DD
+  module: KidsModule;
+  ageGroup: KidsAgeGroup;
+  registeredBy: 'qrcode' | 'manual';
+  registeredByUid: string;
+  registeredByName: string;
+  createdAt: string;
+}
+
 // ─── Membros ───────────────────────────────────────────────────────────────────
 export type MemberStatus = 'ativo' | 'visitante' | 'inativo';
 

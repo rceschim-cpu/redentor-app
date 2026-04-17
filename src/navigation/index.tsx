@@ -28,6 +28,12 @@ import {
   AddMemberScreen,
 } from '../screens/MembersScreens';
 import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
+import {
+  KidsListScreen,
+  KidDetailScreen,
+  AddKidScreen,
+  EditKidScreen,
+} from '../screens/KidsScreens';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -153,6 +159,11 @@ function AppNavigator() {
       <AppStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
       <AppStack.Screen name="Banners" component={BannersScreen} options={{ title: 'Banners da Home' }} />
       <AppStack.Screen name="Bible" component={BibleScreen} options={{ title: 'Bíblia' }} />
+      {/* Kids */}
+      <AppStack.Screen name="Kids" component={KidsListScreen} options={{ title: 'Redentor Kids' }} />
+      <AppStack.Screen name="KidDetail" component={KidDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddKid" component={AddKidScreen} options={{ title: 'Cadastrar Criança' }} />
+      <AppStack.Screen name="EditKid" component={EditKidScreen} options={{ title: 'Editar Criança' }} />
     </AppStack.Navigator>
   );
 }
