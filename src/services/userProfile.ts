@@ -3,6 +3,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
   collection,
   getDocs,
   query,
@@ -47,4 +48,8 @@ export async function getAllUsers(): Promise<AppUserProfile[]> {
   const q = query(collection(db, COL), orderBy('name'));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile));
+}
+
+export async function unlinkMemberFromUser(uid: string): Promise<void> {
+  await updateDoc(doc(db, COL, uid), { memberId: deleteField() });
 }

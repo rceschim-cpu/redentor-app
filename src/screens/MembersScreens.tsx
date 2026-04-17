@@ -7,19 +7,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
-  Platform,
   Linking,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
-import { Member, MemberStatus } from '../types';
+import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
 import { useFocusEffect } from '@react-navigation/native';
+import { findUserByMemberId } from '../services/notifications';
+import { getUserProfile, updateUserProfile, unlinkMemberFromUser } from '../services/userProfile';
+import { showAlert, showConfirm } from '../utils/alert';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
@@ -35,7 +36,7 @@ export function MembersListScreen({ navigation }: any) {
       setLoading(true);
       getMembers()
         .then(setMembers)
-        .catch(() => Alert.alert('Erro', 'Não foi possível carregar os membros.'))
+        .catch(() => showAlert('Erro', 'Não foi possível carregar os membros.'))
         .finally(() => setLoading(false));
     }, [])
   );
@@ -127,6 +128,8 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const canDelete = appUser?.role === 'administrador';
+  const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
+  const [roleChanging, setRoleChanging] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -138,8 +141,13 @@ export function MemberDetailScreen({ route, navigation }: any) {
           if (m?.groupId) {
             getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
           }
+          // Find linked user account
+          findUserByMemberId(memberId)
+            .then((uid) => uid ? getUserProfile(uid) : null)
+            .then(setLinkedUser)
+            .catch(() => setLinkedUser(null));
         })
-        .catch(() => Alert.alert('Erro', 'Membro não encontrado.'))
+        .catch(() => showAlert('Erro', 'Membro não encontrado.'))
         .finally(() => setLoading(false));
     }, [memberId])
   );
@@ -152,23 +160,35 @@ export function MemberDetailScreen({ route, navigation }: any) {
   };
 
   const handleDelete = () => {
-    const doDelete = async () => {
-      try {
-        await deleteMember(member!.id);
-        navigation.goBack();
-      } catch {
-        Alert.alert('Erro', 'Não foi possível excluir o membro.');
-      }
-    };
-    if (Platform.OS === 'web') {
-      // @ts-ignore
-      if (window.confirm(`Excluir "${member!.name}"? Esta ação não pode ser desfeita.`)) doDelete();
-    } else {
-      Alert.alert(
-        'Excluir membro',
-        `Tem certeza que deseja excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
-        [{ text: 'Cancelar', style: 'cancel' }, { text: 'Excluir', style: 'destructive', onPress: doDelete }]
-      );
+    showConfirm(
+      'Excluir membro',
+      `Excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
+      async () => {
+        try {
+          await deleteMember(member!.id);
+          // Disconnect from user account if linked
+          if (linkedUser) {
+            await unlinkMemberFromUser(linkedUser.uid);
+          }
+          navigation.goBack();
+        } catch {
+          showAlert('Erro', 'Não foi possível excluir o membro.');
+        }
+      },
+      'Excluir'
+    );
+  };
+
+  const handleRoleChange = async (role: UserRole) => {
+    if (!linkedUser || role === linkedUser.role) return;
+    setRoleChanging(true);
+    try {
+      await updateUserProfile(linkedUser.uid, { role });
+      setLinkedUser((prev) => prev ? { ...prev, role } : prev);
+    } catch {
+      showAlert('Erro', 'Não foi possível alterar o perfil de acesso.');
+    } finally {
+      setRoleChanging(false);
     }
   };
 
@@ -228,11 +248,52 @@ export function MemberDetailScreen({ route, navigation }: any) {
           </Card>
         )}
         {(member.street || member.neighborhood || member.city) && (
-          <Card style={{ marginBottom: 16 }}>
+          <Card style={{ marginBottom: 10 }}>
             <Text style={styles.cardTitle}>ENDEREÇO</Text>
             {member.street && <DetailRow label="Rua" value={member.street} />}
             {member.neighborhood && <DetailRow label="Bairro" value={member.neighborhood} />}
             {member.city && <DetailRow label="Cidade" value={member.city} />}
+          </Card>
+        )}
+        {canDelete && linkedUser && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>ACESSO AO APP</Text>
+            <DetailRow label="E-mail de acesso" value={linkedUser.email} />
+            <View style={{ marginTop: 10 }}>
+              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>PERFIL DE ACESSO</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(['administrador', 'pastor', 'lider', 'membro'] as UserRole[]).map((role) => {
+                  const ROLE_COLORS: Record<UserRole, { bg: string; fg: string }> = {
+                    administrador: { bg: '#EDE9F7', fg: '#7B5EA7' },
+                    pastor:        { bg: '#E8F2FA', fg: '#2D6EA0' },
+                    lider:         { bg: '#E8F4EA', fg: '#3B7A46' },
+                    membro:        { bg: Colors.background, fg: Colors.textSecondary },
+                  };
+                  const rc = ROLE_COLORS[role];
+                  const isActive = linkedUser.role === role;
+                  return (
+                    <TouchableOpacity
+                      key={role}
+                      disabled={roleChanging}
+                      onPress={() => handleRoleChange(role)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        borderWidth: 1.5,
+                        borderColor: rc.fg,
+                        backgroundColor: isActive ? rc.fg : Colors.surface,
+                        opacity: roleChanging ? 0.6 : 1,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : rc.fg }}>
+                        {isActive ? `✓ ${ROLE_LABELS[role]}` : ROLE_LABELS[role]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           </Card>
         )}
         {member.phone ? (
@@ -247,14 +308,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
         ) : (
           <PrimaryButton
             label="Entrar em Contato"
-            onPress={() => {
-              if (Platform.OS === 'web') {
-                // @ts-ignore
-                window.alert('Este membro não tem telefone cadastrado.');
-              } else {
-                Alert.alert('Sem telefone', 'Este membro não tem telefone cadastrado.');
-              }
-            }}
+            onPress={() => showAlert('Sem telefone', 'Este membro não tem telefone cadastrado.')}
           />
         )}
         {canEdit && (
@@ -340,7 +394,7 @@ export function AddMemberScreen({ navigation, route }: any) {
 
   const handleSave = async () => {
     if (saving) return;
-    if (!name.trim()) { Alert.alert('Nome obrigatório'); return; }
+    if (!name.trim()) { showAlert('Nome obrigatório'); return; }
     setSaving(true);
     try {
       const cleanCars = cars
@@ -370,12 +424,7 @@ export function AddMemberScreen({ navigation, route }: any) {
       navigation.goBack();
     } catch (err: any) {
       const msg = err?.message ?? 'Não foi possível salvar. Tente novamente.';
-      if (Platform.OS === 'web') {
-        // @ts-ignore
-        window.alert(`Erro: ${msg}`);
-      } else {
-        Alert.alert('Erro', msg);
-      }
+      showAlert('Erro', msg);
     } finally {
       setSaving(false);
     }

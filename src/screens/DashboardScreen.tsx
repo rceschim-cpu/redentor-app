@@ -59,11 +59,11 @@ const MODULES = [
   { icon: '📅', label: 'Eventos', sub: 'Calendário', color: '#E8F2FA', screen: null },
   { icon: '▶️', label: 'Cultos', sub: 'Links ao vivo', color: '#FDF0E8', screen: 'Cultos' },
   { icon: '🅿️', label: 'Estacionamento', sub: 'Gestão de vagas', color: '#F0F0EE', screen: 'Parking' },
+  { icon: '🧒', label: 'Redentor Kids', sub: 'Crianças e Ponte', color: '#FFF3CD', screen: 'KidsList' },
 ];
 
 export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
-  const isAdmin = appUser?.role === 'administrador';
   const [memberCount, setMemberCount] = useState('—');
   const [groupCount, setGroupCount] = useState('—');
   const [activeBanner, setActiveBanner] = useState(0);
@@ -92,14 +92,6 @@ export default function DashboardScreen({ navigation }: any) {
             />
           </View>
           <View style={styles.heroActions}>
-            {isAdmin && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Users')}
-                style={styles.adminBtn}
-              >
-                <Text style={styles.adminBtnIcon}>⚙</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
               <Avatar name={displayName} size={38} index={1} photoURL={appUser?.photoURL} />
             </TouchableOpacity>
@@ -251,15 +243,6 @@ const styles = StyleSheet.create({
   moduleLabel: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
   moduleSub: { fontSize: 11, color: Colors.textMuted },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  adminBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.07)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  adminBtnIcon: { fontSize: 18, color: Colors.textPrimary },
   bannerScroll: { marginTop: Spacing.lg, marginBottom: 0 },
   bannerSlide: {
     borderRadius: Radius.lg,
