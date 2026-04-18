@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACCENT = '#E7C530';
-const BG = '#C8C8C6';           // cinza médio — base dos raios
+const BG = '#ADADAB';           // cinza médio-escuro — base dos raios
 
 // ─── Banners com cores originais ──────────────────────────────────────────────
 const BANNERS = [
