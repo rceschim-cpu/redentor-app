@@ -98,22 +98,27 @@ export default function DashboardScreen({ navigation }: any) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ── Cabeçalho com logo ── */}
+        {/* ── Cabeçalho: logo | saudação | avatar ── */}
         <View style={styles.header}>
           <Image
             source={require('../../assets/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
+          <View style={styles.greetingWrap}>
+            <Text style={styles.greeting}>Bem-Vindo</Text>
+            <Text style={styles.name}>{firstName}</Text>
+          </View>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <Avatar name={displayName} size={40} index={1} photoURL={appUser?.photoURL} />
           </TouchableOpacity>
         </View>
 
-        {/* Saudação */}
-        <View style={styles.greetingWrap}>
-          <Text style={styles.greeting}>Bem-Vindo</Text>
-          <Text style={styles.name}>{firstName}</Text>
+        {/* ── Divisor header / banners ── */}
+        <View style={styles.headerDivider}>
+          <View style={styles.headerDividerLine} />
+          <View style={styles.headerDividerAccent} />
+          <View style={styles.headerDividerLine} />
         </View>
 
         {/* ── Banner carousel ── */}
@@ -247,24 +252,44 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  // Header com logo
+  // Header com logo | saudação | avatar
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.sm,
-  },
-  logo: { width: 130, height: 44 },
-
-  // Saudação
-  greetingWrap: {
-    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+    gap: 10,
   },
-  greeting: { fontSize: 12, color: Colors.textSecondary },
-  name: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  logo: { width: 110, height: 40 },
+
+  // Saudação (centro do header)
+  greetingWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  greeting: { fontSize: 11, color: Colors.textSecondary, letterSpacing: 0.3 },
+  name: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+
+  // Divisor entre header e banners
+  headerDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    gap: 6,
+  },
+  headerDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  headerDividerAccent: {
+    width: 32,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: ACCENT,
+  },
 
   // Banner
   bannerWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
