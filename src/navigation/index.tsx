@@ -22,6 +22,7 @@ import {
 } from '../screens/MembersScreens';
 import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
 import { KidsListScreen, KidsDetailScreen, AddKidScreen } from '../screens/KidsScreens';
+import KidsAttendanceScreen from '../screens/KidsAttendanceScreen';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -145,6 +146,7 @@ function AppNavigator() {
       <AppStack.Screen name="KidsList" component={KidsListScreen} options={{ title: 'Redentor Kids' }} />
       <AppStack.Screen name="KidsDetail" component={KidsDetailScreen} options={{ title: '' }} />
       <AppStack.Screen name="AddKid" component={AddKidScreen} options={{ title: 'Nova Criança' }} />
+      <AppStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
       {/* Outros */}
       <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />
       <AppStack.Screen name="Parking" component={ParkingScreen} options={{ title: 'Estacionamento' }} />

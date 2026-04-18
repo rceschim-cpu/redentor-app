@@ -11,7 +11,9 @@ import {
   Linking,
   Platform,
   Image,
+  Modal,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
@@ -181,13 +183,26 @@ export function KidsListScreen({ navigation }: any) {
       )}
 
       {isStaff && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('AddKid', {})}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        <>
+          {/* Botão chamada do dia */}
+          <TouchableOpacity
+            style={styles.attendanceBtn}
+            onPress={() => navigation.navigate('KidsAttendance')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="checkbox-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.attendanceBtnText}>Chamada de hoje</Text>
+          </TouchableOpacity>
+
+          {/* FAB adicionar criança */}
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate('AddKid', {})}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );
@@ -203,6 +218,7 @@ export function KidsDetailScreen({ navigation, route }: any) {
   const [history, setHistory] = useState<ChildAttendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingPresence, setMarkingPresence] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -272,8 +288,26 @@ export function KidsDetailScreen({ navigation, route }: any) {
   const todayStr = new Date().toISOString().split('T')[0];
   const alreadyPresent = history.some((a) => a.date === todayStr);
 
+  // HTML do QR Code gerado via CDN (sem dependência extra)
+  const qrHtml = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;font-family:sans-serif}canvas{border-radius:8px}p{font-size:13px;color:#555;margin-top:12px;text-align:center;padding:0 16px}</style></head><body><canvas id="qr"></canvas><p>${child.name}</p><script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script><script>QRCode.toCanvas(document.getElementById('qr'),'redentor-kids:${child.id}',{width:220,margin:2},function(err){if(err)document.body.innerHTML='<p>Erro ao gerar QR</p>'})</script></body></html>`;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* Modal QR Code */}
+      <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
+        <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={() => setShowQR(false)}>
+          <View style={styles.qrModal}>
+            <Text style={styles.qrModalTitle}>QR Code — {child.name}</Text>
+            <WebView
+              source={{ html: qrHtml }}
+              style={styles.qrWebView}
+              scrollEnabled={false}
+            />
+            <Text style={styles.qrModalSub}>Toque fora para fechar</Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Header card */}
       <View style={[styles.kidsHeader, { backgroundColor: MODULE_COLORS[child.module] }]}>
         <Avatar name={child.name} size={72} index={0} photoURL={child.photoURL} />
@@ -287,6 +321,11 @@ export function KidsDetailScreen({ navigation, route }: any) {
               {child.module === 'kids' ? 'Redentor Kids' : 'Ponte'}
             </Text>
           </View>
+          {/* Botão QR */}
+          <TouchableOpacity style={styles.qrHeaderBtn} onPress={() => setShowQR(true)}>
+            <Ionicons name="qr-code-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
+            <Text style={styles.qrHeaderBtnText}>Ver QR Code</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -738,4 +777,67 @@ const styles = StyleSheet.create({
   guardianCardTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   addGuardianBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   addGuardianText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+
+  // Botão chamada (lista)
+  attendanceBtn: {
+    position: 'absolute',
+    bottom: 90,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#5BA56A',
+    borderRadius: Radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  attendanceBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+  // QR Code header button (detalhe)
+  qrHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: Radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  qrHeaderBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+
+  // QR Modal
+  qrOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrModal: {
+    backgroundColor: '#fff',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    width: 280,
+  },
+  qrModalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  qrWebView: {
+    width: 240,
+    height: 240,
+    borderRadius: Radius.md,
+  },
+  qrModalSub: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+  },
 });
