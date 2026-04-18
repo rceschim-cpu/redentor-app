@@ -17,6 +17,8 @@ import { getMembers, getMember, addMember, updateMember, deleteMember } from '..
 import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
+import { getChildrenByGuardianMember } from '../services/kids';
+import { Child } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { findUserByMemberId } from '../services/notifications';
 import { getUserProfile, updateUserProfile, unlinkMemberFromUser } from '../services/userProfile';
@@ -130,6 +132,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const canDelete = appUser?.role === 'administrador';
   const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
+  const [linkedChildren, setLinkedChildren] = useState<Child[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -146,6 +149,10 @@ export function MemberDetailScreen({ route, navigation }: any) {
             .then((uid) => uid ? getUserProfile(uid) : null)
             .then(setLinkedUser)
             .catch(() => setLinkedUser(null));
+          // Find linked children
+          getChildrenByGuardianMember(memberId)
+            .then(setLinkedChildren)
+            .catch(() => setLinkedChildren([]));
         })
         .catch(() => showAlert('Erro', 'Membro não encontrado.'))
         .finally(() => setLoading(false));
@@ -296,6 +303,45 @@ export function MemberDetailScreen({ route, navigation }: any) {
             </View>
           </Card>
         )}
+        {linkedChildren.length > 0 && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>CRIANÇAS VINCULADAS</Text>
+            {linkedChildren.map((child) => (
+              <TouchableOpacity
+                key={child.id}
+                style={styles.childRow}
+                onPress={() => navigation.navigate('KidsDetail', { childId: child.id })}
+                activeOpacity={0.75}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.childName}>{child.name}</Text>
+                  <Text style={styles.childSub}>
+                    {child.module === 'kids' ? 'Redentor Kids' : 'Ponte'} · {child.ageGroup} anos
+                  </Text>
+                </View>
+                <View style={[styles.childStatusDot, { backgroundColor: child.status === 'ativo' ? '#5BA56A' : '#AAA' }]} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.addChildBtn}
+              onPress={() => navigation.navigate('AddKid', {})}
+            >
+              <Text style={styles.addChildBtnText}>+ Cadastrar criança</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
+        {linkedChildren.length === 0 && canEdit && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>CRIANÇAS</Text>
+            <TouchableOpacity
+              style={styles.addChildBtn}
+              onPress={() => navigation.navigate('AddKid', {})}
+            >
+              <Text style={styles.addChildBtnText}>+ Cadastrar criança vinculada</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
+
         {member.phone ? (
           <PrimaryButton
             label="📱 Entrar em Contato via WhatsApp"
@@ -613,4 +659,11 @@ const styles = StyleSheet.create({
   btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
   btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  // Children section
+  childRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  childName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  childSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  childStatusDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 8 },
+  addChildBtn: { marginTop: 10, borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 10, alignItems: 'center' },
+  addChildBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 13 },
 });

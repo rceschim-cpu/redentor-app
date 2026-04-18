@@ -18,10 +18,72 @@ export interface AppUserProfile {
   profileComplete?: boolean; // true após completar cadastro no primeiro acesso
   photoURL?: string;         // foto importada do Google (ou outra provider)
   createdAt?: string;
+  expoPushToken?: string;    // token para notificações push nativas (opcional)
+}
+
+// ─── Notificações in-app (Firestore /notifications/{uid}/items) ───────────────
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  type: 'join_request' | 'parking' | 'general';
+  read: boolean;
+  createdAt: string;
+  metadata?: {
+    groupId?: string;
+    groupName?: string;
+    plate?: string;
+    memberName?: string;
+  };
+}
+
+// ─── Redentor Kids / Ponte ────────────────────────────────────────────────────
+export type KidsAgeGroup = '0-3' | '4-6' | '7-9' | '10-12';
+export type KidsModule   = 'kids' | 'ponte';
+
+export interface Guardian {
+  name: string;
+  phone: string;           // com DDD
+  relationship: string;    // pai, mãe, avó, etc.
+  memberId?: string;       // ID do membro vinculado (opcional)
+}
+
+export interface Child {
+  id: string;
+  name: string;
+  birthDate: string;       // DD/MM/YYYY
+  ageGroup: KidsAgeGroup;
+  module: KidsModule;
+  status: 'ativo' | 'inativo';
+  photoURL?: string;
+  guardians: Guardian[];
+  guardianMemberIds?: string[]; // IDs dos membros responsáveis (para query array-contains)
+  lastAttendance?: string;      // ISO date da última presença
+  createdAt: string;
+  observations?: string;
+}
+
+export interface ChildAttendance {
+  id: string;
+  childId: string;
+  childName: string;
+  date: string;            // YYYY-MM-DD
+  module: KidsModule;
+  ageGroup: KidsAgeGroup;
+  registeredBy: 'qrcode' | 'manual';
+  registeredByUid: string;
+  registeredByName: string;
+  createdAt: string;
 }
 
 // ─── Membros ───────────────────────────────────────────────────────────────────
 export type MemberStatus = 'ativo' | 'visitante' | 'inativo';
+
+export interface FamilyLink {
+  memberId: string;
+  memberName: string;
+  relationship: string; // cônjuge, filho, filha, pai, mãe, irmão, irmã...
+}
 
 export interface Member {
   id: string;
@@ -40,6 +102,7 @@ export interface Member {
   avatarIndex?: number;
   cars?: Array<{ plate: string; model?: string; color?: string }>;
   carPlates?: string[];
+  familyLinks?: FamilyLink[];
 }
 
 // ─── Pequenos Grupos ───────────────────────────────────────────────────────────
@@ -76,6 +139,21 @@ export interface GroupMembership {
   requestedAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
+}
+
+// ─── Materiais de Pequenos Grupos ─────────────────────────────────────────────
+export interface GroupMaterial {
+  id: string;
+  groupId: string;
+  title: string;
+  description?: string;
+  fileURL: string;
+  fileName: string;
+  fileType: string;
+  fileSize?: number;
+  uploadedBy: string;
+  uploaderName: string;
+  uploadedAt: string;
 }
 
 // ─── User (legado — mantido para compatibilidade) ─────────────────────────────
