@@ -506,15 +506,16 @@ export function AddKidScreen({ navigation, route }: any) {
     try {
       const ageGroup = calcAgeGroup(birthDate);
       const module = calcModule(ageGroup);
-      const payload = {
+      const payload: any = {
         name: name.trim(),
         birthDate,
         ageGroup,
         module,
         guardians: validGuardians,
-        observations: observations.trim() || undefined,
-        photoURL,
       };
+      // Campos opcionais: nunca enviar undefined ao Firestore
+      if (observations.trim()) payload.observations = observations.trim();
+      if (photoURL) payload.photoURL = photoURL;
 
       if (isEditing && childId) {
         await updateChild(childId, payload);
