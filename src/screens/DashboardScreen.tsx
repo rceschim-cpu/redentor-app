@@ -8,6 +8,7 @@ import {
   Alert,
   Dimensions,
   TextInput,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
@@ -16,33 +17,34 @@ import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACCENT = '#E7C530';
+const BG = '#C8C8C6';           // cinza médio — base dos raios
 
 // ─── Banners com cores originais ──────────────────────────────────────────────
 const BANNERS = [
-  { id: '1', color: Colors.archRose,   icon: 'musical-notes-outline' as const, title: 'Culto Dominical',       sub: 'Domingo às 10h · Templo Principal',    screen: null },
-  { id: '2', color: Colors.archBlue,   icon: 'calendar-outline'      as const, title: 'Agenda da Semana',      sub: 'Confira os próximos eventos',           screen: 'Events' },
-  { id: '3', color: Colors.archYellow, icon: 'ribbon-outline'        as const, title: '160 Anos do Redentor',  sub: '1865 · Celebrando nossa história',      screen: 'Celebration' },
-  { id: '4', color: Colors.archGreen,  icon: 'home-outline'          as const, title: 'Pequenos Grupos',       sub: 'Encontre seu grupo desta semana',       screen: 'SmallGroups' },
+  { id: '1', color: Colors.archRose,   icon: 'musical-notes-outline' as const, title: 'Culto Dominical',      sub: 'Domingo às 10h · Templo Principal',  screen: null },
+  { id: '2', color: Colors.archBlue,   icon: 'calendar-outline'      as const, title: 'Agenda da Semana',     sub: 'Confira os próximos eventos',         screen: 'Events' },
+  { id: '3', color: Colors.archYellow, icon: 'ribbon-outline'        as const, title: '160 Anos do Redentor', sub: '1865 · Celebrando nossa história',    screen: 'Celebration' },
+  { id: '4', color: Colors.archGreen,  icon: 'home-outline'          as const, title: 'Pequenos Grupos',      sub: 'Encontre seu grupo desta semana',     screen: 'SmallGroups' },
 ];
 
-// ─── Módulos (Ionicons brancos em fundo amarelo) ──────────────────────────────
+// ─── Módulos ──────────────────────────────────────────────────────────────────
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
-  { icon: 'person-outline',         label: 'Membros',       screen: 'Members' },
-  { icon: 'people-outline',         label: 'Peq. Grupos',   screen: 'SmallGroups' },
-  { icon: 'calendar-outline',       label: 'Eventos',       screen: 'Events' },
-  { icon: 'play-circle-outline',    label: 'Cultos',        screen: 'Cultos' },
-  { icon: 'car-outline',            label: 'Estacion.',     screen: 'Parking' },
-  { icon: 'happy-outline',          label: 'Kids',          screen: 'KidsList' },
-  { icon: 'notifications-outline',  label: 'Notificações',  screen: 'Notifications' },
-  { icon: 'settings-outline',       label: 'Config.',       screen: 'Settings' },
+  { icon: 'person-outline',        label: 'Membros',      screen: 'Members' },
+  { icon: 'people-outline',        label: 'Peq. Grupos',  screen: 'SmallGroups' },
+  { icon: 'calendar-outline',      label: 'Eventos',      screen: 'Events' },
+  { icon: 'play-circle-outline',   label: 'Cultos',       screen: 'Cultos' },
+  { icon: 'car-outline',           label: 'Estacion.',    screen: 'Parking' },
+  { icon: 'happy-outline',         label: 'Kids',         screen: 'KidsList' },
+  { icon: 'notifications-outline', label: 'Notificações', screen: 'Notifications' },
+  { icon: 'settings-outline',      label: 'Config.',      screen: 'Settings' },
 ];
 
-// ─── Fundo geométrico (raios brancos diagonais sobre cinza claro) ─────────────
+// ─── Fundo geométrico ─────────────────────────────────────────────────────────
+// Base cinza médio + raios brancos diagonais saindo do canto inferior esquerdo
 function GeometricBg() {
-  // Raios brancos saindo do canto inferior esquerdo
-  const rays = [20, 38, 55, 72, 90, 108, 126];
+  const rays = [18, 34, 50, 66, 82, 98, 114, 130];
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {rays.map((angle, i) => (
@@ -50,11 +52,11 @@ function GeometricBg() {
           key={i}
           style={{
             position: 'absolute',
-            width: 1600,
-            height: 1600,
-            left: -600,
-            bottom: -600,
-            backgroundColor: 'rgba(255,255,255,0.52)',
+            width: 1800,
+            height: 1800,
+            left: -700,
+            bottom: -700,
+            backgroundColor: 'rgba(255,255,255,0.28)',
             transform: [{ rotate: `${angle}deg` }],
           }}
         />
@@ -96,15 +98,22 @@ export default function DashboardScreen({ navigation }: any) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ── Cabeçalho ── */}
+        {/* ── Cabeçalho com logo ── */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Bem-Vindo</Text>
-            <Text style={styles.name}>{firstName}</Text>
-          </View>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name={displayName} size={42} index={1} photoURL={appUser?.photoURL} />
+            <Avatar name={displayName} size={40} index={1} photoURL={appUser?.photoURL} />
           </TouchableOpacity>
+        </View>
+
+        {/* Saudação */}
+        <View style={styles.greetingWrap}>
+          <Text style={styles.greeting}>Bem-Vindo</Text>
+          <Text style={styles.name}>{firstName}</Text>
         </View>
 
         {/* ── Banner carousel ── */}
@@ -130,7 +139,7 @@ export default function DashboardScreen({ navigation }: any) {
                 }
               >
                 <View style={styles.bannerIconWrap}>
-                  <Ionicons name={b.icon} size={28} color="rgba(255,255,255,0.9)" />
+                  <Ionicons name={b.icon} size={26} color="rgba(255,255,255,0.9)" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.bannerTitle}>{b.title}</Text>
@@ -140,7 +149,7 @@ export default function DashboardScreen({ navigation }: any) {
             ))}
           </ScrollView>
 
-          {/* Indicadores coloridos por banner */}
+          {/* Indicadores coloridos */}
           <View style={styles.dotsRow}>
             {BANNERS.map((b, i) => (
               <TouchableOpacity
@@ -154,7 +163,7 @@ export default function DashboardScreen({ navigation }: any) {
                   {
                     backgroundColor: b.color,
                     flex: i === activeBanner ? 3 : 1,
-                    opacity: i === activeBanner ? 1 : 0.3,
+                    opacity: i === activeBanner ? 1 : 0.35,
                   },
                 ]}
               />
@@ -162,21 +171,21 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* ── Barra de pesquisa ── */}
+        {/* ── Barra de pesquisa com borda ── */}
         <View style={styles.searchWrap}>
           <TextInput
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
             placeholder="Pesquisar"
-            placeholderTextColor="#AAAAAA"
+            placeholderTextColor="#888"
           />
           <View style={styles.searchBtn}>
             <Ionicons name="search-outline" size={16} color="#fff" />
           </View>
         </View>
 
-        {/* ── Grid de módulos — ícone branco em círculo amarelo ── */}
+        {/* ── Grid de módulos ── */}
         <View style={styles.grid}>
           {filteredModules.map((m) => (
             <TouchableOpacity
@@ -195,9 +204,19 @@ export default function DashboardScreen({ navigation }: any) {
           ))}
         </View>
 
+        {/* ── Divisor ── */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <View style={styles.dividerDot} />
+          <View style={styles.dividerLine} />
+        </View>
+
         {/* ── Próximos Eventos ── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximos Eventos</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Events')}>
+            <Text style={styles.sectionLink}>Ver todos</Text>
+          </TouchableOpacity>
         </View>
         <ScrollView
           horizontal
@@ -226,20 +245,26 @@ export default function DashboardScreen({ navigation }: any) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Fundo cinza claro para os raios brancos aparecerem
-  container: { flex: 1, backgroundColor: '#E8E8E6' },
+  container: { flex: 1, backgroundColor: BG },
 
-  // Header
+  // Header com logo
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
+    paddingBottom: Spacing.sm,
+  },
+  logo: { width: 130, height: 44 },
+
+  // Saudação
+  greetingWrap: {
+    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
   },
-  greeting: { fontSize: 13, color: Colors.textSecondary },
-  name: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  greeting: { fontSize: 12, color: Colors.textSecondary },
+  name: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
 
   // Banner
   bannerWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
@@ -253,9 +278,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   bannerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -263,30 +288,29 @@ const styles = StyleSheet.create({
   bannerTitle: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold', marginBottom: 3 },
   bannerSub:   { fontSize: 11, color: 'rgba(255,255,255,0.82)' },
 
-  // Indicadores
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     marginTop: 10,
-    marginBottom: 4,
+    marginBottom: 2,
     width: '50%',
     alignSelf: 'center',
   },
   dot: { height: 5, borderRadius: 3 },
 
-  // Search
+  // Search — com borda visível
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'rgba(255,255,255,0.75)',
     borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   searchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary },
   searchBtn: {
@@ -316,26 +340,45 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
   moduleLabel: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', maxWidth: 70 },
 
+  // Divisor entre módulos e eventos
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    gap: 8,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.12)' },
+  dividerDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT },
+
   // Eventos
-  sectionHeader: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  sectionLink:  { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+
   eventsRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingBottom: 4 },
   eventCard: {
     width: 130,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderRadius: Radius.lg,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(255,255,255,0.9)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
   },
