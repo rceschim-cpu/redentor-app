@@ -37,5 +37,14 @@ service cloud.firestore {
     match /banners/{id} {
       allow read, write: if request.auth != null;
     }
+
+    // Redentor Kids — crianças e presenças
+    match /children/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /children_attendance/{id} {
+      allow read, write: if request.auth != null;
+    }
   }
 }
