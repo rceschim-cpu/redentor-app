@@ -28,12 +28,8 @@ import {
   AddMemberScreen,
 } from '../screens/MembersScreens';
 import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
-import {
-  KidsListScreen,
-  KidDetailScreen,
-  AddKidScreen,
-  EditKidScreen,
-} from '../screens/KidsScreens';
+import { KidsListScreen, KidsDetailScreen, AddKidScreen } from '../screens/KidsScreens';
+import KidsAttendanceScreen from '../screens/KidsAttendanceScreen';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -88,8 +84,8 @@ function MainTabs({ navigation }: any) {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.headerBg,
-          borderTopColor: Colors.border,
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#EEEEEE',
           borderTopWidth: 1,
           height: 68,
           paddingBottom: 10,
@@ -98,10 +94,9 @@ function MainTabs({ navigation }: any) {
           fontSize: 10,
           fontWeight: '700',
           fontFamily: 'Inter_600SemiBold',
-          color: Colors.textPrimary,
         },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
-        tabBarActiveTintColor: Colors.primary,
+        tabBarActiveTintColor: '#E7C530',
         tabBarInactiveTintColor: Colors.textSecondary,
       })}
     >
@@ -149,6 +144,11 @@ function AppNavigator() {
       <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
       <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
       <AppStack.Screen name="GroupMaterials" component={GroupMaterialsScreen} options={{ title: 'Materiais' }} />
+      {/* Kids */}
+      <AppStack.Screen name="KidsList" component={KidsListScreen} options={{ title: 'Redentor Kids' }} />
+      <AppStack.Screen name="KidsDetail" component={KidsDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddKid" component={AddKidScreen} options={{ title: 'Nova Criança' }} />
+      <AppStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
       {/* Outros */}
       <AppStack.Screen name="Events" component={EventsScreen} options={{ title: 'Agenda' }} />
       <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />
@@ -159,11 +159,6 @@ function AppNavigator() {
       <AppStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
       <AppStack.Screen name="Banners" component={BannersScreen} options={{ title: 'Banners da Home' }} />
       <AppStack.Screen name="Bible" component={BibleScreen} options={{ title: 'Bíblia' }} />
-      {/* Kids */}
-      <AppStack.Screen name="Kids" component={KidsListScreen} options={{ title: 'Redentor Kids' }} />
-      <AppStack.Screen name="KidDetail" component={KidDetailScreen} options={{ title: '' }} />
-      <AppStack.Screen name="AddKid" component={AddKidScreen} options={{ title: 'Cadastrar Criança' }} />
-      <AppStack.Screen name="EditKid" component={EditKidScreen} options={{ title: 'Editar Criança' }} />
     </AppStack.Navigator>
   );
 }
