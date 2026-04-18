@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,65 +6,56 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Image,
   Dimensions,
   TextInput,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
-import { getMembers } from '../services/members';
-import { getGroups } from '../services/groups';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const ACCENT = '#E7C530';
-const ACCENT_LIGHT = 'rgba(231,197,48,0.13)';
 
-// ─── Banners ──────────────────────────────────────────────────────────────────
+// ─── Banners com cores originais ──────────────────────────────────────────────
 const BANNERS = [
-  { id: '1', title: 'Culto Dominical', sub: 'Domingo às 10h · Templo Principal', screen: null },
-  { id: '2', title: 'Agenda da Semana', sub: 'Confira os próximos eventos', screen: null },
-  { id: '3', title: '160 Anos do Redentor', sub: '1865 · Celebrando nossa história', screen: 'Celebration' },
-  { id: '4', title: 'Pequenos Grupos', sub: 'Encontre seu grupo desta semana', screen: 'SmallGroups' },
+  { id: '1', color: Colors.archRose,   icon: 'musical-notes-outline' as const, title: 'Culto Dominical',       sub: 'Domingo às 10h · Templo Principal',    screen: null },
+  { id: '2', color: Colors.archBlue,   icon: 'calendar-outline'      as const, title: 'Agenda da Semana',      sub: 'Confira os próximos eventos',           screen: 'Events' },
+  { id: '3', color: Colors.archYellow, icon: 'ribbon-outline'        as const, title: '160 Anos do Redentor',  sub: '1865 · Celebrando nossa história',      screen: 'Celebration' },
+  { id: '4', color: Colors.archGreen,  icon: 'home-outline'          as const, title: 'Pequenos Grupos',       sub: 'Encontre seu grupo desta semana',       screen: 'SmallGroups' },
 ];
 
-// ─── Módulos ──────────────────────────────────────────────────────────────────
-const MODULES = [
-  { icon: '👥', label: 'Membros',       screen: 'Members' },
-  { icon: '🏘️', label: 'Peq. Grupos',   screen: 'SmallGroups' },
-  { icon: '📅', label: 'Eventos',       screen: null },
-  { icon: '▶️', label: 'Cultos',        screen: 'Cultos' },
-  { icon: '🅿️', label: 'Estacion.',    screen: 'Parking' },
-  { icon: '🧒', label: 'Kids',          screen: 'KidsList' },
-  { icon: '🔔', label: 'Notificações', screen: 'Notifications' },
-  { icon: '⚙️', label: 'Config.',       screen: 'Settings' },
+// ─── Módulos (Ionicons brancos em fundo amarelo) ──────────────────────────────
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
+  { icon: 'person-outline',         label: 'Membros',       screen: 'Members' },
+  { icon: 'people-outline',         label: 'Peq. Grupos',   screen: 'SmallGroups' },
+  { icon: 'calendar-outline',       label: 'Eventos',       screen: 'Events' },
+  { icon: 'play-circle-outline',    label: 'Cultos',        screen: 'Cultos' },
+  { icon: 'car-outline',            label: 'Estacion.',     screen: 'Parking' },
+  { icon: 'happy-outline',          label: 'Kids',          screen: 'KidsList' },
+  { icon: 'notifications-outline',  label: 'Notificações',  screen: 'Notifications' },
+  { icon: 'settings-outline',       label: 'Config.',       screen: 'Settings' },
 ];
 
-// ─── Fundo Geométrico ─────────────────────────────────────────────────────────
+// ─── Fundo geométrico (raios brancos diagonais sobre cinza claro) ─────────────
 function GeometricBg() {
-  const rays = [
-    { rotate: '35deg',  left: -300, bottom: -300, opacity: 0.045 },
-    { rotate: '50deg',  left: -300, bottom: -300, opacity: 0.055 },
-    { rotate: '65deg',  left: -300, bottom: -300, opacity: 0.04  },
-    { rotate: '80deg',  left: -300, bottom: -300, opacity: 0.05  },
-    { rotate: '95deg',  left: -300, bottom: -300, opacity: 0.035 },
-    { rotate: '115deg', left: -300, bottom: -300, opacity: 0.04  },
-  ];
+  // Raios brancos saindo do canto inferior esquerdo
+  const rays = [20, 38, 55, 72, 90, 108, 126];
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {rays.map((r, i) => (
+      {rays.map((angle, i) => (
         <View
           key={i}
           style={{
             position: 'absolute',
-            width: 1200,
-            height: 1200,
-            left: r.left,
-            bottom: r.bottom,
-            backgroundColor: `rgba(0,0,0,${r.opacity})`,
-            transform: [{ rotate: r.rotate }],
+            width: 1600,
+            height: 1600,
+            left: -600,
+            bottom: -600,
+            backgroundColor: 'rgba(255,255,255,0.52)',
+            transform: [{ rotate: `${angle}deg` }],
           }}
         />
       ))}
@@ -72,7 +63,7 @@ function GeometricBg() {
   );
 }
 
-// ─── Tela principal ───────────────────────────────────────────────────────────
+// ─── Tela ─────────────────────────────────────────────────────────────────────
 export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
   const [search, setSearch] = useState('');
@@ -83,7 +74,7 @@ export default function DashboardScreen({ navigation }: any) {
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
   const firstName = displayName.split(' ')[0];
 
-  // Auto-scroll banner
+  // Auto-scroll
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBanner((prev) => {
@@ -111,11 +102,9 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={styles.greeting}>Bem-Vindo</Text>
             <Text style={styles.name}>{firstName}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              <Avatar name={displayName} size={40} index={1} photoURL={appUser?.photoURL} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            <Avatar name={displayName} size={42} index={1} photoURL={appUser?.photoURL} />
+          </TouchableOpacity>
         </View>
 
         {/* ── Banner carousel ── */}
@@ -135,12 +124,15 @@ export default function DashboardScreen({ navigation }: any) {
               <TouchableOpacity
                 key={b.id}
                 activeOpacity={0.88}
-                style={[styles.bannerSlide, { width: BANNER_W }]}
+                style={[styles.bannerSlide, { width: BANNER_W, backgroundColor: b.color }]}
                 onPress={() =>
                   b.screen ? navigation.navigate(b.screen) : Alert.alert(b.title, b.sub)
                 }
               >
-                <View style={styles.bannerInner}>
+                <View style={styles.bannerIconWrap}>
+                  <Ionicons name={b.icon} size={28} color="rgba(255,255,255,0.9)" />
+                </View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.bannerTitle}>{b.title}</Text>
                   <Text style={styles.bannerSub}>{b.sub}</Text>
                 </View>
@@ -148,16 +140,23 @@ export default function DashboardScreen({ navigation }: any) {
             ))}
           </ScrollView>
 
-          {/* Indicadores */}
+          {/* Indicadores coloridos por banner */}
           <View style={styles.dotsRow}>
-            {BANNERS.map((_, i) => (
+            {BANNERS.map((b, i) => (
               <TouchableOpacity
                 key={i}
                 onPress={() => {
                   setActiveBanner(i);
                   bannerRef.current?.scrollTo({ x: i * BANNER_W, animated: true });
                 }}
-                style={[styles.dot, i === activeBanner && styles.dotActive]}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: b.color,
+                    flex: i === activeBanner ? 3 : 1,
+                    opacity: i === activeBanner ? 1 : 0.3,
+                  },
+                ]}
               />
             ))}
           </View>
@@ -173,11 +172,11 @@ export default function DashboardScreen({ navigation }: any) {
             placeholderTextColor="#AAAAAA"
           />
           <View style={styles.searchBtn}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Ionicons name="search-outline" size={16} color="#fff" />
           </View>
         </View>
 
-        {/* ── Grid de módulos (4 colunas) ── */}
+        {/* ── Grid de módulos — ícone branco em círculo amarelo ── */}
         <View style={styles.grid}>
           {filteredModules.map((m) => (
             <TouchableOpacity
@@ -189,7 +188,7 @@ export default function DashboardScreen({ navigation }: any) {
               }
             >
               <View style={styles.moduleIconBox}>
-                <Text style={styles.moduleEmoji}>{m.icon}</Text>
+                <Ionicons name={m.icon} size={26} color="#fff" />
               </View>
               <Text style={styles.moduleLabel} numberOfLines={1}>{m.label}</Text>
             </TouchableOpacity>
@@ -227,10 +226,8 @@ export default function DashboardScreen({ navigation }: any) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  // Fundo cinza claro para os raios brancos aparecerem
+  container: { flex: 1, backgroundColor: '#E8E8E6' },
 
   // Header
   header: {
@@ -241,65 +238,42 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.md,
   },
-  greeting: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontFamily: 'SourceSans3_400Regular',
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    fontFamily: 'Lora_600SemiBold',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  greeting: { fontSize: 13, color: Colors.textSecondary },
+  name: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
 
   // Banner
-  bannerWrap: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
+  bannerWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
   bannerSlide: {
     borderRadius: Radius.lg,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 88,
     overflow: 'hidden',
-    backgroundColor: ACCENT,
   },
-  bannerInner: {
-    padding: 20,
-    minHeight: 90,
+  bannerIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  bannerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Lora_600SemiBold',
-    marginBottom: 4,
-  },
-  bannerSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
-  },
+  bannerTitle: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold', marginBottom: 3 },
+  bannerSub:   { fontSize: 11, color: 'rgba(255,255,255,0.82)' },
+
+  // Indicadores
   dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
+    alignItems: 'center',
+    gap: 5,
     marginTop: 10,
+    marginBottom: 4,
+    width: '50%',
+    alignSelf: 'center',
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#CCCCCC',
-  },
-  dotActive: {
-    width: 18,
-    backgroundColor: ACCENT,
-  },
+  dot: { height: 5, borderRadius: 3 },
 
   // Search
   searchWrap: {
@@ -307,18 +281,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: 'rgba(255,255,255,0.6)',
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.textPrimary,
-  },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary },
   searchBtn: {
     width: 32,
     height: 32,
@@ -327,66 +297,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchIcon: { fontSize: 14 },
 
-  // Grid de módulos
+  // Grid módulos
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  moduleItem: {
-    width: '25%',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
+  moduleItem: { width: '25%', alignItems: 'center', marginBottom: Spacing.lg },
   moduleIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: Radius.md,
-    backgroundColor: ACCENT_LIGHT,
+    width: 58,
+    height: 58,
+    borderRadius: Radius.lg,
+    backgroundColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(231,197,48,0.2)',
-  },
-  moduleEmoji: { fontSize: 22 },
-  moduleLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    maxWidth: 70,
-  },
-
-  // Eventos
-  sectionHeader: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    fontFamily: 'Lora_600SemiBold',
-  },
-  eventsRow: {
-    paddingHorizontal: Spacing.lg,
-    gap: 12,
-    paddingBottom: 4,
-  },
-  eventCard: {
-    width: 130,
-    backgroundColor: '#fff',
-    borderRadius: Radius.lg,
-    padding: 12,
-    borderWidth: 1.5,
-    borderColor: '#EEEEEE',
+    marginBottom: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  moduleLabel: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', maxWidth: 70 },
+
+  // Eventos
+  sectionHeader: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  eventsRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingBottom: 4 },
+  eventCard: {
+    width: 130,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: Radius.lg,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -397,20 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  eventDay: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Lora_600SemiBold',
-  },
-  eventLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  eventLocal: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
+  eventDay:   { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
+  eventLabel: { fontSize: 12, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
+  eventLocal: { fontSize: 11, color: Colors.textSecondary },
 });
