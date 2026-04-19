@@ -2,7 +2,6 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,13 +14,7 @@ import AddGroupScreen from '../screens/AddGroupScreen';
 import CultosScreen from '../screens/CultosScreen';
 import ParkingScreen from '../screens/ParkingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import EventsScreen from '../screens/EventsScreen';
 import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
-import GroupMaterialsScreen from '../screens/GroupMaterialsScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
-import BannersScreen from '../screens/BannersScreen';
-import BibleScreen from '../screens/BibleScreen';
 import {
   MembersListScreen,
   MemberDetailScreen,
@@ -31,22 +24,19 @@ import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
 import { KidsListScreen, KidsDetailScreen, AddKidScreen } from '../screens/KidsScreens';
 import KidsAttendanceScreen from '../screens/KidsAttendanceScreen';
 
-const RootStack  = createNativeStackNavigator();
-const Tab        = createBottomTabNavigator();
-const HomeStack  = createNativeStackNavigator();
-const MembStack  = createNativeStackNavigator();
-const GroupStack = createNativeStackNavigator();
-const CelebStack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+const AppStack = createNativeStackNavigator();
 
-// ─── Estilos de header compartilhados ─────────────────────────────────────────
+// Todas as telas compartilham o mesmo stack — garantindo botão nativo em todas
 const headerStyle = {
   headerStyle: { backgroundColor: Colors.headerBg },
   headerTintColor: Colors.headerText as string,
-  headerTitleStyle: { fontFamily: 'Inter_700Bold', fontSize: 17, color: Colors.headerText },
+  headerTitleStyle: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: Colors.headerText },
   headerBackTitle: '',
 };
 
-// Botão de voltar manual — para telas que são raiz do seu stack dentro da tab
+// Botão de voltar idêntico ao nativo — mesma cor do headerTintColor, mesmo peso
 function BackBtn({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity
@@ -54,108 +44,27 @@ function BackBtn({ onPress }: { onPress: () => void }) {
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       style={{ paddingRight: Platform.OS === 'ios' ? 6 : 4 }}
     >
-      <Text style={{ fontSize: 32, lineHeight: 36, color: Colors.headerText, fontWeight: '200', marginTop: -2 }}>
-        ‹
-      </Text>
+      <Text style={{ fontSize: 32, lineHeight: 36, color: Colors.headerText, fontWeight: '200', marginTop: -2 }}>‹</Text>
     </TouchableOpacity>
   );
 }
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
-
-// ─── Ícones das tabs ───────────────────────────────────────────────────────────
-const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  HomeTab:        { active: 'home',    inactive: 'home-outline' },
-  MembersTab:     { active: 'person',  inactive: 'person-outline' },
-  SmallGroupsTab: { active: 'people',  inactive: 'people-outline' },
-  CelebrationTab: { active: 'star',    inactive: 'star-outline' },
-};
-
-// ─── Stack do Dashboard (tab Início) ──────────────────────────────────────────
-function HomeStackScreen() {
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const icons: Record<string, string> = {
+    Dashboard: '⌂',
+    Members: '●●',
+    SmallGroups: '▲',
+    Celebration: '✦',
+  };
   return (
-    <HomeStack.Navigator screenOptions={headerStyle}>
-      <HomeStack.Screen name="Dashboard"     component={DashboardScreen}   options={{ headerShown: false }} />
-      <HomeStack.Screen name="Events"        component={EventsScreen}       options={{ title: 'Agenda' }} />
-      <HomeStack.Screen name="Cultos"        component={CultosScreen}       options={{ title: 'Cultos' }} />
-      <HomeStack.Screen name="Parking"       component={ParkingScreen}      options={{ title: 'Estacionamento' }} />
-      <HomeStack.Screen name="Profile"       component={ProfileScreen}      options={{ title: 'Meu Perfil' }} />
-      <HomeStack.Screen name="Users"         component={UsersScreen}        options={{ title: 'Usuários' }} />
-      <HomeStack.Screen name="Settings"      component={SettingsScreen}     options={{ title: 'Configurações' }} />
-      <HomeStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
-      <HomeStack.Screen name="Banners"       component={BannersScreen}      options={{ title: 'Banners da Home' }} />
-      <HomeStack.Screen name="Bible"         component={BibleScreen}        options={{ title: 'Bíblia' }} />
-      <HomeStack.Screen name="KidsList"      component={KidsListScreen}     options={{ title: 'Redentor Kids' }} />
-      <HomeStack.Screen name="KidsDetail"    component={KidsDetailScreen}   options={{ title: '' }} />
-      <HomeStack.Screen name="AddKid"        component={AddKidScreen}       options={{ title: 'Nova Criança' }} />
-      <HomeStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
-      <HomeStack.Screen name="MemberDetail"  component={MemberDetailScreen} options={{ title: '' }} />
-      <HomeStack.Screen name="GroupDetail"   component={GroupDetailScreen}  options={{ title: '' }} />
-    </HomeStack.Navigator>
+    <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4, color: Colors.primary }}>
+      {icons[name]}
+    </Text>
   );
 }
 
-// ─── Stack de Membros ──────────────────────────────────────────────────────────
-function MembersStackScreen() {
-  return (
-    <MembStack.Navigator screenOptions={headerStyle}>
-      <MembStack.Screen
-        name="MembersList"
-        component={MembersListScreen}
-        options={({ navigation }) => ({
-          title: 'Membros',
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('HomeTab')} />,
-        })}
-      />
-      <MembStack.Screen name="MemberDetail"  component={MemberDetailScreen} options={{ title: '' }} />
-      <MembStack.Screen name="AddMember"     component={AddMemberScreen}    options={{ title: 'Novo Membro' }} />
-      <MembStack.Screen name="KidsList"      component={KidsListScreen}     options={{ title: 'Redentor Kids' }} />
-      <MembStack.Screen name="KidsDetail"    component={KidsDetailScreen}   options={{ title: '' }} />
-      <MembStack.Screen name="AddKid"        component={AddKidScreen}       options={{ title: 'Nova Criança' }} />
-      <MembStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
-    </MembStack.Navigator>
-  );
-}
-
-// ─── Stack de Pequenos Grupos ──────────────────────────────────────────────────
-function GroupsStackScreen() {
-  return (
-    <GroupStack.Navigator screenOptions={headerStyle}>
-      <GroupStack.Screen
-        name="GroupsList"
-        component={GroupsListScreen}
-        options={({ navigation }) => ({
-          title: 'Pequenos Grupos',
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('HomeTab')} />,
-        })}
-      />
-      <GroupStack.Screen name="GroupDetail"         component={GroupDetailScreen}          options={{ title: '' }} />
-      <GroupStack.Screen name="AddGroup"            component={AddGroupScreen}             options={{ title: 'Novo Grupo' }} />
-      <GroupStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen}  options={{ title: 'Solicitações' }} />
-      <GroupStack.Screen name="GroupMaterials"      component={GroupMaterialsScreen}       options={{ title: 'Materiais' }} />
-      <GroupStack.Screen name="MemberDetail"        component={MemberDetailScreen}         options={{ title: '' }} />
-    </GroupStack.Navigator>
-  );
-}
-
-// ─── Stack de 160 Anos ────────────────────────────────────────────────────────
-function CelebrationStackScreen() {
-  return (
-    <CelebStack.Navigator screenOptions={headerStyle}>
-      <CelebStack.Screen
-        name="Celebration"
-        component={CelebrationScreen}
-        options={({ navigation }) => ({
-          title: '160 Anos',
-          headerLeft: () => <BackBtn onPress={() => navigation.navigate('HomeTab')} />,
-        })}
-      />
-    </CelebStack.Navigator>
-  );
-}
-
-// ─── Tab Navigator principal ───────────────────────────────────────────────────
-function MainTabs() {
+// Tab bar como overlay — sempre visível nas telas raiz
+function MainTabs({ navigation }: any) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -170,38 +79,85 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '700',
-          fontFamily: 'Inter_600SemiBold',
+          fontFamily: 'SourceSans3_600SemiBold',
         },
-        tabBarIcon: ({ focused }) => {
-          const icons = TAB_ICONS[route.name];
-          if (!icons) return null;
-          return (
-            <Ionicons
-              name={focused ? icons.active : icons.inactive}
-              size={24}
-              color={focused ? '#E7C530' : Colors.textSecondary}
-            />
-          );
-        },
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
         tabBarActiveTintColor: '#E7C530',
         tabBarInactiveTintColor: Colors.textSecondary,
       })}
     >
-      <Tab.Screen name="HomeTab"        component={HomeStackScreen}        options={{ title: 'Início' }} />
-      <Tab.Screen name="MembersTab"     component={MembersStackScreen}     options={{ title: 'Membros' }} />
-      <Tab.Screen name="SmallGroupsTab" component={GroupsStackScreen}      options={{ title: 'Grupos' }} />
-      <Tab.Screen name="CelebrationTab" component={CelebrationStackScreen} options={{ title: '160 Anos' }} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ title: 'Início' }}
+      />
+      <Tab.Screen
+        name="Members"
+        component={MembersListScreen}
+        options={({ navigation }) => ({
+          title: 'Membros',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
+      />
+      <Tab.Screen
+        name="SmallGroups"
+        component={GroupsListScreen}
+        options={({ navigation }) => ({
+          title: 'Pequenos Grupos',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
+      />
+      <Tab.Screen
+        name="Celebration"
+        component={CelebrationScreen}
+        options={({ navigation }) => ({
+          title: '160 Anos',
+          headerShown: true,
+          ...headerStyle,
+          headerLeft: () => <BackBtn onPress={() => navigation.navigate('Dashboard')} />,
+        })}
+      />
     </Tab.Navigator>
   );
 }
 
-// ─── Navigator raiz ───────────────────────────────────────────────────────────
+// Stack principal — todas as telas empilhadas sobre as tabs
 function AppNavigator() {
-  return <MainTabs />;
+  return (
+    <AppStack.Navigator screenOptions={headerStyle}>
+      {/* Tab root — sem header próprio */}
+      <AppStack.Screen
+        name="Tabs"
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      {/* Membros */}
+      <AppStack.Screen name="MemberDetail" component={MemberDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddMember" component={AddMemberScreen} options={{ title: 'Novo Membro' }} />
+      {/* Grupos */}
+      <AppStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddGroup" component={AddGroupScreen} options={{ title: 'Novo Grupo' }} />
+      <AppStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen} options={{ title: 'Solicitações' }} />
+      {/* Kids */}
+      <AppStack.Screen name="KidsList" component={KidsListScreen} options={{ title: 'Redentor Kids' }} />
+      <AppStack.Screen name="KidsDetail" component={KidsDetailScreen} options={{ title: '' }} />
+      <AppStack.Screen name="AddKid" component={AddKidScreen} options={{ title: 'Nova Criança' }} />
+      <AppStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
+      {/* Outros */}
+      <AppStack.Screen name="Cultos" component={CultosScreen} options={{ title: 'Cultos' }} />
+      <AppStack.Screen name="Parking" component={ParkingScreen} options={{ title: 'Estacionamento' }} />
+      <AppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />
+      <AppStack.Screen name="Users" component={UsersScreen} options={{ title: 'Usuários' }} />
+    </AppStack.Navigator>
+  );
 }
 
 export default function RootNavigator() {
-  const { user, appUser, loading, isNewUser } = useAuth();
+  const { user, appUser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -215,7 +171,7 @@ export default function RootNavigator() {
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <RootStack.Screen name="Login" component={LoginScreen} />
-      ) : isNewUser ? (
+      ) : !appUser?.profileComplete ? (
         <RootStack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
       ) : (
         <RootStack.Screen name="Main" component={AppNavigator} />
