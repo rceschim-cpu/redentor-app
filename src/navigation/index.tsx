@@ -1,7 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,15 +37,19 @@ const headerStyle = {
   headerBackTitle: '',
 };
 
-// Botão de voltar idêntico ao nativo — mesma cor do headerTintColor, mesmo peso
+// Botão de voltar idêntico ao nativo
 function BackBtn({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      style={{ paddingRight: Platform.OS === 'ios' ? 6 : 4 }}
+      style={{ paddingHorizontal: Platform.OS === 'ios' ? 8 : 4 }}
     >
-      <Text style={{ fontSize: 32, lineHeight: 36, color: Colors.headerText, fontWeight: '200', marginTop: -2 }}>‹</Text>
+      <Ionicons
+        name={Platform.OS === 'ios' ? 'chevron-back' : 'arrow-back'}
+        size={24}
+        color={Colors.headerText}
+      />
     </TouchableOpacity>
   );
 }
