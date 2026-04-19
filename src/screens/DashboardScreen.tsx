@@ -9,6 +9,7 @@ import {
   Dimensions,
   TextInput,
   Image,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
@@ -69,8 +70,24 @@ export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
-  const bannerRef = useRef<ScrollView>(null);
-  const BANNER_W = SCREEN_WIDTH - Spacing.lg * 2;
+  const activeBannerRef = useRef(0);
+
+  const goToBanner = (idx: number) => {
+    const clamped = Math.max(0, Math.min(idx, BANNERS.length - 1));
+    activeBannerRef.current = clamped;
+    setActiveBanner(clamped);
+  };
+
+  const bannerPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && Math.abs(g.dx) > 8,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < -30) goToBanner(activeBannerRef.current + 1);
+        else if (g.dx > 30) goToBanner(activeBannerRef.current - 1);
+      },
+    })
+  ).current;
 
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
   const firstName = displayName.split(' ')[0];
@@ -78,14 +95,11 @@ export default function DashboardScreen({ navigation }: any) {
   // Auto-scroll
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveBanner((prev) => {
-        const next = (prev + 1) % BANNERS.length;
-        bannerRef.current?.scrollTo({ x: next * BANNER_W, animated: true });
-        return next;
-      });
+      const next = (activeBannerRef.current + 1) % BANNERS.length;
+      goToBanner(next);
     }, 4000);
     return () => clearInterval(timer);
-  }, [BANNER_W]);
+  }, []);
 
   const filteredModules = MODULES.filter((m) =>
     search === '' || m.label.toLowerCase().includes(search.toLowerCase())
@@ -128,55 +142,34 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* ── Banner carousel ── */}
         <View style={styles.bannerWrap}>
-          <ScrollView
-            ref={bannerRef}
-            horizontal
-            snapToInterval={BANNER_W}
-            snapToAlignment="start"
-            decelerationRate="fast"
-            disableIntervalMomentum
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_W);
-              setActiveBanner(Math.max(0, Math.min(idx, BANNERS.length - 1)));
-            }}
-            onScrollEndDrag={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_W);
-              const clamped = Math.max(0, Math.min(idx, BANNERS.length - 1));
-              setActiveBanner(clamped);
-              bannerRef.current?.scrollTo({ x: clamped * BANNER_W, animated: true });
-            }}
+          <View
+            {...bannerPan.panHandlers}
             style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
           >
-            {BANNERS.map((b) => (
-              <TouchableOpacity
-                key={b.id}
-                activeOpacity={0.88}
-                style={[styles.bannerSlide, { width: BANNER_W, backgroundColor: b.color }]}
-                onPress={() =>
-                  b.screen ? navigation.navigate(b.screen) : Alert.alert(b.title, b.sub)
-                }
-              >
-                <View style={styles.bannerIconWrap}>
-                  <Ionicons name={b.icon} size={26} color="rgba(255,255,255,0.9)" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.bannerTitle}>{b.title}</Text>
-                  <Text style={styles.bannerSub}>{b.sub}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[styles.bannerSlide, { backgroundColor: BANNERS[activeBanner].color }]}
+              onPress={() => {
+                const b = BANNERS[activeBanner];
+                b.screen ? navigation.navigate(b.screen) : Alert.alert(b.title, b.sub);
+              }}
+            >
+              <View style={styles.bannerIconWrap}>
+                <Ionicons name={BANNERS[activeBanner].icon} size={26} color="rgba(255,255,255,0.9)" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.bannerTitle}>{BANNERS[activeBanner].title}</Text>
+                <Text style={styles.bannerSub}>{BANNERS[activeBanner].sub}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
 
           {/* Indicadores coloridos */}
           <View style={styles.dotsRow}>
             {BANNERS.map((b, i) => (
               <TouchableOpacity
                 key={i}
-                onPress={() => {
-                  setActiveBanner(i);
-                  bannerRef.current?.scrollTo({ x: i * BANNER_W, animated: true });
-                }}
+                onPress={() => goToBanner(i)}
                 style={[
                   styles.dot,
                   {
