@@ -23,16 +23,16 @@ const BG = '#ADADAB';           // cinza médio-escuro — base dos raios
 const BANNERS = [
   { id: '1', color: Colors.archRose,   icon: 'musical-notes-outline' as const, title: 'Culto Dominical',      sub: 'Domingo às 10h · Templo Principal',  screen: null },
   { id: '2', color: Colors.archBlue,   icon: 'calendar-outline'      as const, title: 'Agenda da Semana',     sub: 'Confira os próximos eventos',         screen: 'Events' },
-  { id: '3', color: Colors.archYellow, icon: 'ribbon-outline'        as const, title: '160 Anos do Redentor', sub: '1865 · Celebrando nossa história',    screen: 'Celebration' },
-  { id: '4', color: Colors.archGreen,  icon: 'home-outline'          as const, title: 'Pequenos Grupos',      sub: 'Encontre seu grupo desta semana',     screen: 'SmallGroups' },
+  { id: '3', color: Colors.archYellow, icon: 'ribbon-outline'        as const, title: '160 Anos do Redentor', sub: '1865 · Celebrando nossa história',    screen: 'CelebrationTab' },
+  { id: '4', color: Colors.archGreen,  icon: 'home-outline'          as const, title: 'Pequenos Grupos',      sub: 'Encontre seu grupo desta semana',     screen: 'SmallGroupsTab' },
 ];
 
 // ─── Módulos ──────────────────────────────────────────────────────────────────
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
-  { icon: 'person-outline',        label: 'Membros',      screen: 'Members' },
-  { icon: 'people-outline',        label: 'Peq. Grupos',  screen: 'SmallGroups' },
+  { icon: 'person-outline',        label: 'Membros',      screen: 'MembersTab' },
+  { icon: 'people-outline',        label: 'Peq. Grupos',  screen: 'SmallGroupsTab' },
   { icon: 'calendar-outline',      label: 'Eventos',      screen: 'Events' },
   { icon: 'play-circle-outline',   label: 'Cultos',       screen: 'Cultos' },
   { icon: 'car-outline',           label: 'Estacion.',    screen: 'Parking' },
@@ -202,7 +202,7 @@ export default function DashboardScreen({ navigation }: any) {
               }
             >
               <View style={styles.moduleIconBox}>
-                <Ionicons name={m.icon} size={26} color="#fff" />
+                <Ionicons name={m.icon} size={26} color={ACCENT} />
               </View>
               <Text style={styles.moduleLabel} numberOfLines={1}>{m.label}</Text>
             </TouchableOpacity>
@@ -229,18 +229,29 @@ export default function DashboardScreen({ navigation }: any) {
           contentContainerStyle={styles.eventsRow}
         >
           {[
-            { day: '27/04', label: 'Culto Dominical', local: 'Templo Principal' },
-            { day: '02/05', label: 'Reunião de PG',   local: 'Redentor' },
-            { day: '04/05', label: 'Culto Dominical', local: 'Templo Principal' },
-          ].map((ev, i) => (
-            <View key={i} style={styles.eventCard}>
-              <View style={styles.eventDateBox}>
-                <Text style={styles.eventDay}>{ev.day}</Text>
-              </View>
-              <Text style={styles.eventLabel} numberOfLines={2}>{ev.label}</Text>
-              <Text style={styles.eventLocal}>{ev.local}</Text>
-            </View>
-          ))}
+            { day: '18/04', label: 'Encontro de Homens', local: 'Redentor' },
+            { day: '27/04', label: 'Culto Dominical',    local: 'Templo Principal' },
+            { day: '02/05', label: 'Reunião de PG',       local: 'Redentor' },
+            { day: '04/05', label: 'Culto Dominical',    local: 'Templo Principal' },
+          ].map((ev, i) => {
+            const today = new Date();
+            const todayStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}`;
+            const isToday = ev.day === todayStr;
+            return (
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.8}
+                style={[styles.eventCard, isToday && styles.eventCardToday]}
+                onPress={() => navigation.navigate('Events')}
+              >
+                <View style={[styles.eventDateBox, isToday && styles.eventDateBoxToday]}>
+                  <Text style={[styles.eventDay, isToday && styles.eventDayToday]}>{ev.day}</Text>
+                </View>
+                <Text style={[styles.eventLabel, isToday && styles.eventLabelToday]} numberOfLines={2}>{ev.label}</Text>
+                <Text style={[styles.eventLocal, isToday && styles.eventLocalToday]}>{ev.local}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
       </ScrollView>
@@ -359,15 +370,17 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: Radius.lg,
-    backgroundColor: ACCENT,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.10,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   moduleLabel: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', maxWidth: 70 },
 
@@ -408,13 +421,21 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   eventDateBox: {
-    backgroundColor: ACCENT,
+    backgroundColor: 'rgba(0,0,0,0.06)',
     borderRadius: Radius.sm,
     paddingVertical: 6,
     alignItems: 'center',
     marginBottom: 8,
   },
-  eventDay:   { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Lora_600SemiBold' },
+  eventDateBoxToday: { backgroundColor: '#fff' },
+  eventDay:   { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Lora_600SemiBold' },
+  eventDayToday: { color: ACCENT },
   eventLabel: { fontSize: 12, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
+  eventLabelToday: { color: '#fff' },
   eventLocal: { fontSize: 11, color: Colors.textSecondary },
+  eventLocalToday: { color: 'rgba(255,255,255,0.8)' },
+  eventCardToday: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
 });
