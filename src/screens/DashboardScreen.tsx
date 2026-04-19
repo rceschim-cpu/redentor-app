@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACCENT = '#E7C530';
-const BG = '#6E6E6B';           // cinza escuro — contrasta com branco dos cards
+const BG = '#4A4A47';           // cinza escuro — contrasta com branco dos cards
 
 // ─── Banners com cores originais ──────────────────────────────────────────────
 const BANNERS = [
@@ -142,7 +142,9 @@ export default function DashboardScreen({ navigation }: any) {
             }}
             onScrollEndDrag={(e) => {
               const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_W);
-              setActiveBanner(Math.max(0, Math.min(idx, BANNERS.length - 1)));
+              const clamped = Math.max(0, Math.min(idx, BANNERS.length - 1));
+              setActiveBanner(clamped);
+              bannerRef.current?.scrollTo({ x: clamped * BANNER_W, animated: true });
             }}
             style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
           >
