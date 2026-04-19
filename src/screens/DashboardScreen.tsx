@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -70,7 +71,7 @@ export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
-  const bannerRef = useRef<ScrollView>(null);
+  const bannerRef = useRef<FlatList>(null);
   const BANNER_W = SCREEN_WIDTH - Spacing.lg * 2;
 
   const displayName = appUser?.name || user?.displayName || user?.email?.split('@')[0] || 'Usuário';
@@ -81,12 +82,12 @@ export default function DashboardScreen({ navigation }: any) {
     const timer = setInterval(() => {
       setActiveBanner((prev) => {
         const next = (prev + 1) % BANNERS.length;
-        bannerRef.current?.scrollTo({ x: next * BANNER_W, animated: true });
+        bannerRef.current?.scrollToIndex({ index: next, animated: true });
         return next;
       });
     }, 4000);
     return () => clearInterval(timer);
-  }, [BANNER_W]);
+  }, []);
 
   const filteredModules = MODULES.filter((m) =>
     search === '' || m.label.toLowerCase().includes(search.toLowerCase())
@@ -123,20 +124,28 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* ── Banner carousel ── */}
         <View style={styles.bannerWrap}>
-          <ScrollView
+          <FlatList
             ref={bannerRef}
+            data={BANNERS}
+            keyExtractor={(b) => b.id}
             horizontal
-            pagingEnabled
+            pagingEnabled={false}
+            snapToInterval={BANNER_W}
+            snapToAlignment="start"
+            decelerationRate="fast"
             showsHorizontalScrollIndicator={false}
+            getItemLayout={(_, index) => ({ length: BANNER_W, offset: BANNER_W * index, index })}
             onMomentumScrollEnd={(e) => {
               const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_W);
               setActiveBanner(Math.max(0, Math.min(idx, BANNERS.length - 1)));
             }}
+            onScrollEndDrag={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / BANNER_W);
+              setActiveBanner(Math.max(0, Math.min(idx, BANNERS.length - 1)));
+            }}
             style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
-          >
-            {BANNERS.map((b) => (
+            renderItem={({ item: b }) => (
               <TouchableOpacity
-                key={b.id}
                 activeOpacity={0.88}
                 style={[styles.bannerSlide, { width: BANNER_W, backgroundColor: b.color }]}
                 onPress={() =>
@@ -151,8 +160,8 @@ export default function DashboardScreen({ navigation }: any) {
                   <Text style={styles.bannerSub}>{b.sub}</Text>
                 </View>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+          />
 
           {/* Indicadores coloridos */}
           <View style={styles.dotsRow}>
@@ -161,7 +170,7 @@ export default function DashboardScreen({ navigation }: any) {
                 key={i}
                 onPress={() => {
                   setActiveBanner(i);
-                  bannerRef.current?.scrollTo({ x: i * BANNER_W, animated: true });
+                  bannerRef.current?.scrollToIndex({ index: i, animated: true });
                 }}
                 style={[
                   styles.dot,
