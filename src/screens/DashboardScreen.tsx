@@ -37,7 +37,6 @@ const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
   { icon: 'play-circle-outline',   label: 'Cultos',       screen: 'Cultos' },
   { icon: 'car-outline',           label: 'Estacion.',    screen: 'Parking' },
   { icon: 'happy-outline',         label: 'Kids',         screen: 'KidsList' },
-  { icon: 'notifications-outline', label: 'Notificações', screen: 'Notifications' },
   { icon: 'settings-outline',      label: 'Config.',      screen: 'Settings' },
 ];
 
@@ -109,6 +108,12 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={styles.greeting}>Bem-Vindo</Text>
             <Text style={styles.name}>{firstName}</Text>
           </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            style={styles.bellBtn}
+          >
+            <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <Avatar name={displayName} size={40} index={1} photoURL={appUser?.photoURL} />
           </TouchableOpacity>
@@ -236,9 +241,9 @@ export default function DashboardScreen({ navigation }: any) {
           contentContainerStyle={styles.eventsRow}
         >
           {[
-            { day: '18/04', label: 'Encontro de Homens', local: 'Redentor' },
+            { day: '19/04', label: 'Culto de Sábado',    local: 'Templo Principal' },
             { day: '27/04', label: 'Culto Dominical',    local: 'Templo Principal' },
-            { day: '02/05', label: 'Reunião de PG',       local: 'Redentor' },
+            { day: '02/05', label: 'Reunião de PG',      local: 'Redentor' },
             { day: '04/05', label: 'Culto Dominical',    local: 'Templo Principal' },
           ].map((ev, i) => {
             const today = new Date();
@@ -280,6 +285,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logo: { width: 110, height: 40 },
+
+  bellBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Saudação (centro do header)
   greetingWrap: {
