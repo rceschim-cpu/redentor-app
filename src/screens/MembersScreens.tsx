@@ -9,16 +9,17 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
-import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS } from '../types';
+import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS, FamilyLink, Child } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
 import { getChildrenByGuardianMember } from '../services/kids';
-import { Child } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { findUserByMemberId } from '../services/notifications';
 import { getUserProfile, updateUserProfile, unlinkMemberFromUser } from '../services/userProfile';
@@ -303,6 +304,26 @@ export function MemberDetailScreen({ route, navigation }: any) {
             </View>
           </Card>
         )}
+        {(member.familyLinks ?? []).length > 0 && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>FAMÍLIA</Text>
+            {(member.familyLinks ?? []).map((link) => (
+              <TouchableOpacity
+                key={link.memberId}
+                style={styles.childRow}
+                activeOpacity={0.75}
+                onPress={() => navigation.navigate('MemberDetail', { memberId: link.memberId })}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.childName}>{link.memberName}</Text>
+                  <Text style={styles.childSub}>{link.relationship}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
         {linkedChildren.length > 0 && (
           <Card style={{ marginBottom: 10 }}>
             <Text style={styles.cardTitle}>CRIANÇAS VINCULADAS</Text>
@@ -410,7 +431,25 @@ export function AddMemberScreen({ navigation, route }: any) {
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [cars, setCars] = useState<Array<{ plate: string; model: string; color: string }>>([]);
+  const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
+  const [originalFamilyLinks, setOriginalFamilyLinks] = useState<FamilyLink[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Member picker para vínculos familiares
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [pendingLink, setPendingLink] = useState<{ memberId: string; memberName: string } | null>(null);
+  const [pendingRelationship, setPendingRelationship] = useState('');
+
+  useEffect(() => { getMembers().then(setAllMembers).catch(() => {}); }, []);
+
+  const filteredPickerMembers = allMembers.filter(
+    (m) =>
+      m.name.toLowerCase().includes(memberSearch.toLowerCase()) &&
+      m.id !== editingId &&
+      !familyLinks.some((l) => l.memberId === m.id)
+  );
 
   // Carrega dados do Firestore ao editar — evita problemas de serialização de params
   useEffect(() => {
@@ -430,6 +469,8 @@ export function AddMemberScreen({ navigation, route }: any) {
       setNeighborhood(m.neighborhood ?? '');
       setCity(m.city ?? '');
       setCars(m.cars?.map((c) => ({ plate: c.plate, model: c.model ?? '', color: c.color ?? '' })) ?? []);
+      setFamilyLinks(m.familyLinks ?? []);
+      setOriginalFamilyLinks(m.familyLinks ?? []);
     }).finally(() => setLoadingEdit(false));
   }, [editingId]);
 
@@ -437,6 +478,23 @@ export function AddMemberScreen({ navigation, route }: any) {
   const removeCar = (i: number) => setCars((prev) => prev.filter((_, idx) => idx !== i));
   const updateCar = (i: number, field: 'plate' | 'model' | 'color', value: string) =>
     setCars((prev) => prev.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
+
+  const confirmFamilyLink = () => {
+    if (!pendingLink || !pendingRelationship.trim()) {
+      showAlert('Atenção', 'Informe o parentesco.');
+      return;
+    }
+    setFamilyLinks((prev) => [
+      ...prev,
+      { memberId: pendingLink.memberId, memberName: pendingLink.memberName, relationship: pendingRelationship.trim() },
+    ]);
+    setPendingLink(null);
+    setPendingRelationship('');
+    setPickerVisible(false);
+  };
+
+  const removeFamilyLink = (memberId: string) =>
+    setFamilyLinks((prev) => prev.filter((l) => l.memberId !== memberId));
 
   const handleSave = async () => {
     if (saving) return;
@@ -447,8 +505,9 @@ export function AddMemberScreen({ navigation, route }: any) {
         .filter((c) => c.plate.trim())
         .map((c) => ({ plate: c.plate.trim().toUpperCase(), model: c.model.trim(), color: c.color.trim() }));
       const carPlates = cleanCars.map((c) => c.plate);
+      const savedName = name.trim();
       const data = {
-        name: name.trim(),
+        name: savedName,
         phone: phone.trim(),
         birthDate: birthDate.trim(),
         email: email.trim(),
@@ -461,12 +520,40 @@ export function AddMemberScreen({ navigation, route }: any) {
         city: city.trim(),
         cars: cleanCars,
         carPlates,
+        familyLinks,
       };
+
+      let savedId: string;
       if (editingMemberId) {
         await updateMember(editingMemberId, data);
+        savedId = editingMemberId;
       } else {
-        await addMember(data as any);
+        savedId = await addMember(data as any);
       }
+
+      // Sincroniza vínculos bidirecional: adicionados e removidos
+      const added   = familyLinks.filter((l) => !originalFamilyLinks.some((o) => o.memberId === l.memberId));
+      const removed = originalFamilyLinks.filter((o) => !familyLinks.some((l) => l.memberId === o.memberId));
+
+      await Promise.all([
+        ...added.map(async (link) => {
+          const other = await getMember(link.memberId);
+          if (!other) return;
+          const existingLinks = other.familyLinks ?? [];
+          if (existingLinks.some((l) => l.memberId === savedId)) return;
+          await updateMember(link.memberId, {
+            familyLinks: [...existingLinks, { memberId: savedId, memberName: savedName, relationship: link.relationship }],
+          });
+        }),
+        ...removed.map(async (link) => {
+          const other = await getMember(link.memberId);
+          if (!other) return;
+          await updateMember(link.memberId, {
+            familyLinks: (other.familyLinks ?? []).filter((l) => l.memberId !== savedId),
+          });
+        }),
+      ]);
+
       navigation.goBack();
     } catch (err: any) {
       const msg = err?.message ?? 'Não foi possível salvar. Tente novamente.';
@@ -485,7 +572,89 @@ export function AddMemberScreen({ navigation, route }: any) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.formContent}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+
+      {/* Modal: picker de membro para vínculo familiar */}
+      <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => { setPickerVisible(false); setPendingLink(null); }}>
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>
+              {pendingLink ? `Parentesco com ${pendingLink.memberName}` : 'Selecionar membro'}
+            </Text>
+            <TouchableOpacity onPress={() => { setPickerVisible(false); setPendingLink(null); setPendingRelationship(''); }}>
+              <Ionicons name="close" size={24} color={Colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          {!pendingLink ? (
+            /* Etapa 1: escolher o membro */
+            <>
+              <View style={[styles.pickerSearch]}>
+                <Ionicons name="search-outline" size={16} color={Colors.textMuted} style={{ marginRight: 6 }} />
+                <TextInput
+                  style={{ flex: 1, fontSize: 14, color: Colors.textPrimary }}
+                  value={memberSearch}
+                  onChangeText={setMemberSearch}
+                  placeholder="Buscar membro..."
+                  placeholderTextColor={Colors.textMuted}
+                  autoFocus
+                />
+              </View>
+              <FlatList
+                data={filteredPickerMembers}
+                keyExtractor={(m) => m.id}
+                contentContainerStyle={{ padding: Spacing.md }}
+                ListEmptyComponent={<Text style={styles.empty}>Nenhum membro encontrado.</Text>}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    style={styles.memberRow}
+                    activeOpacity={0.75}
+                    onPress={() => { setPendingLink({ memberId: item.id, memberName: item.name }); setMemberSearch(''); }}
+                  >
+                    <Avatar name={item.name} size={40} index={item.avatarIndex ?? index} />
+                    <View style={styles.memberInfo}>
+                      <Text style={styles.memberName}>{item.name}</Text>
+                      {item.phone ? <Text style={styles.memberSub}>{item.phone}</Text> : null}
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </>
+          ) : (
+            /* Etapa 2: definir o parentesco */
+            <View style={{ padding: Spacing.lg }}>
+              <Text style={[styles.formLabel, { marginBottom: 12 }]}>
+                Qual é o parentesco de {editingId ? name : '...'} com {pendingLink.memberName}?
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.lg }}>
+                {['Cônjuge', 'Pai', 'Mãe', 'Filho(a)', 'Irmão', 'Irmã', 'Avô', 'Avó', 'Neto(a)', 'Outro'].map((rel) => (
+                  <TouchableOpacity
+                    key={rel}
+                    style={[styles.chip, pendingRelationship === rel && styles.chipActive]}
+                    onPress={() => setPendingRelationship(rel)}
+                  >
+                    <Text style={[styles.chipText, pendingRelationship === rel && styles.chipTextActive]}>{rel}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={styles.formInput}
+                value={pendingRelationship}
+                onChangeText={setPendingRelationship}
+                placeholder="Ou escreva o parentesco..."
+                placeholderTextColor={Colors.textMuted}
+              />
+              <TouchableOpacity
+                style={[styles.addCarBtn, { marginTop: Spacing.lg, borderStyle: 'solid', backgroundColor: Colors.primary }]}
+                onPress={confirmFamilyLink}
+              >
+                <Text style={[styles.addCarBtnText, { color: '#fff' }]}>Confirmar vínculo</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
+
       <View style={styles.formGroup}>
         <Text style={styles.formLabel}>NOME COMPLETO</Text>
         <TextInput style={styles.formInput} value={name} onChangeText={setName}
@@ -577,6 +746,27 @@ export function AddMemberScreen({ navigation, route }: any) {
           placeholder="Curitiba" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
       </View>
 
+      <Text style={styles.sectionDivider}>FAMÍLIA</Text>
+
+      {familyLinks.map((link) => (
+        <View key={link.memberId} style={styles.familyLinkRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.memberName}>{link.memberName}</Text>
+            <Text style={styles.memberSub}>{link.relationship}</Text>
+          </View>
+          <TouchableOpacity onPress={() => removeFamilyLink(link.memberId)}>
+            <Ionicons name="close-circle-outline" size={20} color={Colors.danger} />
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      <TouchableOpacity
+        style={styles.addCarBtn}
+        onPress={() => { setMemberSearch(''); setPendingLink(null); setPendingRelationship(''); setPickerVisible(true); }}
+      >
+        <Text style={styles.addCarBtnText}>+ Adicionar familiar</Text>
+      </TouchableOpacity>
+
       <Text style={styles.sectionDivider}>VEÍCULOS</Text>
 
       {cars.map((car, i) => (
@@ -655,6 +845,14 @@ const styles = StyleSheet.create({
   carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center' },
   addCarBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
+  // Family links
+  familyLinkRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: 12, marginBottom: 8 },
+
+  // Member picker modal
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface },
+  pickerTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, flex: 1, marginRight: 8 },
+  pickerSearch: { flexDirection: 'row', alignItems: 'center', margin: Spacing.md, backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 8 },
+
   btnEdit: { marginTop: 10, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.primary, alignItems: 'center' },
   btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
