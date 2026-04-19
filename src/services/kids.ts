@@ -1,6 +1,6 @@
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-  query, where, orderBy, Timestamp,
+  query, where,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Child, ChildAttendance, KidsAgeGroup, KidsModule } from '../types';
@@ -42,6 +42,11 @@ export function calcAge(birthDate: string): number {
   return age;
 }
 
+// Extrai IDs de membros vinculados aos responsáveis
+function extractGuardianMemberIds(guardians: Child['guardians']): string[] {
+  return guardians.flatMap((g) => g.memberId ? [g.memberId] : []);
+}
+
 // ── CRUD Crianças ──────────────────────────────────────────────────────────────
 
 export async function getChildren(module?: KidsModule): Promise<Child[]> {
@@ -61,28 +66,44 @@ export async function getChild(id: string): Promise<Child | null> {
 export async function addChild(data: Omit<Child, 'id'>): Promise<Child> {
   const ageGroup = calcAgeGroup(data.birthDate);
   const module   = calcModule(ageGroup);
+  const guardianMemberIds = extractGuardianMemberIds(data.guardians ?? []);
   const docRef = await addDoc(collection(db, CHILDREN_COL), {
     ...data,
     ageGroup,
     module,
     status: 'ativo',
     createdAt: new Date().toISOString(),
+    ...(guardianMemberIds.length > 0 ? { guardianMemberIds } : {}),
   });
-  return { id: docRef.id, ...data, ageGroup, module, status: 'ativo' };
+  return { id: docRef.id, ...data, ageGroup, module, status: 'ativo', guardianMemberIds };
 }
 
 export async function updateChild(id: string, data: Partial<Child>): Promise<void> {
-  // Recalcula faixa etária se birthDate mudou
   const patch: any = { ...data };
   if (data.birthDate) {
     patch.ageGroup = calcAgeGroup(data.birthDate);
     patch.module   = calcModule(patch.ageGroup);
+  }
+  if (data.guardians) {
+    const ids = extractGuardianMemberIds(data.guardians);
+    patch.guardianMemberIds = ids.length > 0 ? ids : [];
   }
   await updateDoc(doc(db, CHILDREN_COL, id), patch);
 }
 
 export async function deleteChild(id: string): Promise<void> {
   await deleteDoc(doc(db, CHILDREN_COL, id));
+}
+
+// Busca crianças vinculadas a um membro como responsável
+export async function getChildrenByGuardianMember(memberId: string): Promise<Child[]> {
+  const q = query(
+    collection(db, CHILDREN_COL),
+    where('guardianMemberIds', 'array-contains', memberId),
+  );
+  const snap = await getDocs(q);
+  const children = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Child));
+  return children.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Inativa crianças sem presença há mais de 1 ano
@@ -163,7 +184,6 @@ export async function markAttendance(
   };
 
   const ref = await addDoc(collection(db, ATTENDANCE_COL), data);
-  // Atualiza lastAttendance na criança
   await updateDoc(doc(db, CHILDREN_COL, child.id), { lastAttendance: new Date().toISOString() });
   return { id: ref.id, ...data };
 }
@@ -201,7 +221,58 @@ export async function getMonthlyReport(year: number, month: number, module?: Kid
   return Object.values(map).sort((a, b) => a.childName.localeCompare(b.childName));
 }
 
-// Crianças que fazem aniversário hoje
+// ── Notificar responsável pelo telefone ───────────────────────────────────────
+// Busca membro pelo telefone → acha uid vinculado → envia notificação in-app + push
+export async function notifyGuardianByPhone(
+  guardianPhone: string,
+  childName: string,
+  message: string,
+): Promise<'sent' | 'no_account'> {
+  const digits = guardianPhone.replace(/\D/g, '');
+
+  const snap = await getDocs(collection(db, 'members'));
+  const match = snap.docs.find((d) => {
+    const phone = (d.data().phone ?? '').replace(/\D/g, '');
+    return phone === digits || phone.endsWith(digits) || digits.endsWith(phone);
+  });
+
+  if (!match) return 'no_account';
+
+  const userSnap = await getDocs(query(
+    collection(db, 'users'),
+    where('memberId', '==', match.id),
+  ));
+
+  if (userSnap.empty) return 'no_account';
+
+  const targetUid = userSnap.docs[0].id;
+  const { sendNotification } = await import('./notifications');
+  await sendNotification(targetUid, `Redentor Kids — ${childName}`, message, 'general');
+
+  return 'sent';
+}
+
+// ── Notificar responsável vinculado ao membro ─────────────────────────────────
+export async function notifyGuardianByMemberId(
+  memberId: string,
+  childName: string,
+  message: string,
+): Promise<'sent' | 'no_account'> {
+  const userSnap = await getDocs(query(
+    collection(db, 'users'),
+    where('memberId', '==', memberId),
+  ));
+
+  if (userSnap.empty) return 'no_account';
+
+  const targetUid = userSnap.docs[0].id;
+  const { sendNotification } = await import('./notifications');
+  await sendNotification(targetUid, `Redentor Kids — ${childName}`, message, 'general');
+
+  return 'sent';
+}
+
+// ── Crianças que fazem aniversário hoje ───────────────────────────────────────
 export async function getTodayBirthdays(): Promise<Child[]> {
   const today = new Date();
   const dd = String(today.getDate()).padStart(2, '0');

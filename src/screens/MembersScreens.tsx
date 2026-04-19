@@ -1,31 +1,28 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text as RNText,
+  Text,
   FlatList,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
-  Platform,
   Linking,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../theme';
-import { AppText as Text, Avatar, StatusBadge, Card, ChipGroup, DetailRow, PrimaryButton } from '../components';
-import { Member, MemberStatus } from '../types';
+import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
+import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
-import { canEditMember } from '../services/permissions';
 import { useAuth } from '../context/AuthContext';
 import { maskPhone, maskDate } from '../utils/masks';
-import { showAlert } from '../utils/alert';
-import { MARITAL_OPTIONS, STATUS_OPTIONS, MARITAL_LABEL } from '../constants/memberOptions';
+import { getChildrenByGuardianMember } from '../services/kids';
+import { Child } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { findUserByMemberId } from '../services/notifications';
 import { getUserProfile, updateUserProfile, unlinkMemberFromUser } from '../services/userProfile';
-import { AppUserProfile, UserRole } from '../types';
+import { showAlert, showConfirm } from '../utils/alert';
 
 // ─── Lista de Membros ─────────────────────────────────────────────────────
 export function MembersListScreen({ navigation }: any) {
@@ -41,7 +38,7 @@ export function MembersListScreen({ navigation }: any) {
       setLoading(true);
       getMembers()
         .then(setMembers)
-        .catch(() => Alert.alert('Erro', 'Não foi possível carregar os membros.'))
+        .catch(() => showAlert('Erro', 'Não foi possível carregar os membros.'))
         .finally(() => setLoading(false));
     }, [])
   );
@@ -125,93 +122,80 @@ export function MembersListScreen({ navigation }: any) {
 }
 
 // ─── Detalhe do Membro ────────────────────────────────────────────────────
-const ROLE_OPTIONS: Array<{ key: UserRole; label: string }> = [
-  { key: 'membro', label: 'Membro' },
-  { key: 'lider', label: 'Líder' },
-  { key: 'pastor', label: 'Pastor' },
-  { key: 'administrador', label: 'Admin' },
-];
-
 export function MemberDetailScreen({ route, navigation }: any) {
   const { memberId } = route.params;
   const { appUser } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const [groupName, setGroupName] = useState<string | null>(null);
-  const [groupLeaderId, setGroupLeaderId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
-  const [savingRole, setSavingRole] = useState(false);
-  const canEdit = canEditMember(appUser?.role ?? 'membro', appUser?.uid ?? '', groupLeaderId);
+  const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
   const canDelete = appUser?.role === 'administrador';
-  const isAdmin = appUser?.role === 'administrador';
+  const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
+  const [roleChanging, setRoleChanging] = useState(false);
+  const [linkedChildren, setLinkedChildren] = useState<Child[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       getMember(memberId)
-        .then(async (m) => {
+        .then((m) => {
           setMember(m);
           if (m) navigation.setOptions({ title: m.name });
           if (m?.groupId) {
-            getGroup(m.groupId).then((g) => {
-              setGroupName(g?.name ?? null);
-              setGroupLeaderId(g?.leaderId);
-            }).catch(() => {});
+            getGroup(m.groupId).then((g) => setGroupName(g?.name ?? null)).catch(() => {});
           }
-          // Load linked user account
-          if (m?.id) {
-            try {
-              const uid = await findUserByMemberId(m.id);
-              if (uid) {
-                const profile = await getUserProfile(uid);
-                setLinkedUser(profile);
-              } else {
-                setLinkedUser(null);
-              }
-            } catch {
-              setLinkedUser(null);
-            }
-          }
+          // Find linked user account
+          findUserByMemberId(memberId)
+            .then((uid) => uid ? getUserProfile(uid) : null)
+            .then(setLinkedUser)
+            .catch(() => setLinkedUser(null));
+          // Find linked children
+          getChildrenByGuardianMember(memberId)
+            .then(setLinkedChildren)
+            .catch(() => setLinkedChildren([]));
         })
         .catch(() => showAlert('Erro', 'Membro não encontrado.'))
         .finally(() => setLoading(false));
     }, [memberId])
   );
 
+  const MARITAL_MAP: Record<string, string> = {
+    solteiro: 'Solteiro(a)',
+    casado: 'Casado(a)',
+    divorciado: 'Divorciado(a)',
+    viuvo: 'Viúvo(a)',
+  };
+
   const handleDelete = () => {
-    const doDelete = async () => {
-      try {
-        await deleteMember(member!.id);
-        if (linkedUser) {
-          await unlinkMemberFromUser(linkedUser.uid).catch(() => {});
+    showConfirm(
+      'Excluir membro',
+      `Excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
+      async () => {
+        try {
+          await deleteMember(member!.id);
+          // Disconnect from user account if linked
+          if (linkedUser) {
+            await unlinkMemberFromUser(linkedUser.uid);
+          }
+          navigation.goBack();
+        } catch {
+          showAlert('Erro', 'Não foi possível excluir o membro.');
         }
-        navigation.goBack();
-      } catch {
-        showAlert('Erro', 'Não foi possível excluir o membro.');
-      }
-    };
-    if (Platform.OS === 'web') {
-      // @ts-ignore
-      if (window.confirm(`Excluir "${member!.name}"? Esta ação não pode ser desfeita.`)) doDelete();
-    } else {
-      Alert.alert(
-        'Excluir membro',
-        `Tem certeza que deseja excluir "${member!.name}"? Esta ação não pode ser desfeita.`,
-        [{ text: 'Cancelar', style: 'cancel' }, { text: 'Excluir', style: 'destructive', onPress: doDelete }]
-      );
-    }
+      },
+      'Excluir'
+    );
   };
 
   const handleRoleChange = async (role: UserRole) => {
-    if (!linkedUser || savingRole) return;
-    setSavingRole(true);
+    if (!linkedUser || role === linkedUser.role) return;
+    setRoleChanging(true);
     try {
       await updateUserProfile(linkedUser.uid, { role });
       setLinkedUser((prev) => prev ? { ...prev, role } : prev);
     } catch {
-      showAlert('Erro', 'Não foi possível alterar o nível de acesso.');
+      showAlert('Erro', 'Não foi possível alterar o perfil de acesso.');
     } finally {
-      setSavingRole(false);
+      setRoleChanging(false);
     }
   };
 
@@ -250,7 +234,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
           <DetailRow label="Telefone" value={member.phone} />
           <DetailRow label="E-mail" value={member.email} />
           <DetailRow label="Nascimento" value={member.birthDate} />
-          <DetailRow label="Estado civil" value={MARITAL_LABEL[member.maritalStatus ?? ''] ?? '—'} />
+          <DetailRow label="Estado civil" value={MARITAL_MAP[member.maritalStatus ?? ''] ?? '—'} />
         </Card>
         <Card style={{ marginBottom: 10 }}>
           <Text style={styles.cardTitle}>VIDA NA COMUNIDADE</Text>
@@ -271,41 +255,90 @@ export function MemberDetailScreen({ route, navigation }: any) {
           </Card>
         )}
         {(member.street || member.neighborhood || member.city) && (
-          <Card style={{ marginBottom: 16 }}>
+          <Card style={{ marginBottom: 10 }}>
             <Text style={styles.cardTitle}>ENDEREÇO</Text>
             {member.street && <DetailRow label="Rua" value={member.street} />}
             {member.neighborhood && <DetailRow label="Bairro" value={member.neighborhood} />}
             {member.city && <DetailRow label="Cidade" value={member.city} />}
           </Card>
         )}
-        {isAdmin && linkedUser && (
+        {canDelete && linkedUser && (
           <Card style={{ marginBottom: 10 }}>
             <Text style={styles.cardTitle}>ACESSO AO APP</Text>
-            <DetailRow label="E-mail de acesso" value={linkedUser.email || '—'} />
-            <Text style={[styles.formLabel, { marginTop: 10, marginBottom: 6 }]}>NÍVEL DE ACESSO</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {ROLE_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.key}
-                  onPress={() => handleRoleChange(opt.key)}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 7,
-                    borderRadius: 20,
-                    borderWidth: 1.5,
-                    borderColor: linkedUser.role === opt.key ? Colors.primary : Colors.border,
-                    backgroundColor: linkedUser.role === opt.key ? Colors.primary : Colors.surface,
-                    opacity: savingRole ? 0.6 : 1,
-                  }}
-                >
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: linkedUser.role === opt.key ? '#fff' : Colors.textSecondary,
-                  }}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
+            <DetailRow label="E-mail de acesso" value={linkedUser.email} />
+            <View style={{ marginTop: 10 }}>
+              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>PERFIL DE ACESSO</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(['administrador', 'pastor', 'lider', 'membro'] as UserRole[]).map((role) => {
+                  const ROLE_COLORS: Record<UserRole, { bg: string; fg: string }> = {
+                    administrador: { bg: '#EDE9F7', fg: '#7B5EA7' },
+                    pastor:        { bg: '#E8F2FA', fg: '#2D6EA0' },
+                    lider:         { bg: '#E8F4EA', fg: '#3B7A46' },
+                    membro:        { bg: Colors.background, fg: Colors.textSecondary },
+                  };
+                  const rc = ROLE_COLORS[role];
+                  const isActive = linkedUser.role === role;
+                  return (
+                    <TouchableOpacity
+                      key={role}
+                      disabled={roleChanging}
+                      onPress={() => handleRoleChange(role)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        borderWidth: 1.5,
+                        borderColor: rc.fg,
+                        backgroundColor: isActive ? rc.fg : Colors.surface,
+                        opacity: roleChanging ? 0.6 : 1,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : rc.fg }}>
+                        {isActive ? `✓ ${ROLE_LABELS[role]}` : ROLE_LABELS[role]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
+          </Card>
+        )}
+        {linkedChildren.length > 0 && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>CRIANÇAS VINCULADAS</Text>
+            {linkedChildren.map((child) => (
+              <TouchableOpacity
+                key={child.id}
+                style={styles.childRow}
+                onPress={() => navigation.navigate('KidsDetail', { childId: child.id })}
+                activeOpacity={0.75}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.childName}>{child.name}</Text>
+                  <Text style={styles.childSub}>
+                    {child.module === 'kids' ? 'Redentor Kids' : 'Ponte'} · {child.ageGroup} anos
+                  </Text>
+                </View>
+                <View style={[styles.childStatusDot, { backgroundColor: child.status === 'ativo' ? '#5BA56A' : '#AAA' }]} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.addChildBtn}
+              onPress={() => navigation.navigate('AddKid', {})}
+            >
+              <Text style={styles.addChildBtnText}>+ Cadastrar criança</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
+        {linkedChildren.length === 0 && canEdit && (
+          <Card style={{ marginBottom: 10 }}>
+            <Text style={styles.cardTitle}>CRIANÇAS</Text>
+            <TouchableOpacity
+              style={styles.addChildBtn}
+              onPress={() => navigation.navigate('AddKid', {})}
+            >
+              <Text style={styles.addChildBtnText}>+ Cadastrar criança vinculada</Text>
+            </TouchableOpacity>
           </Card>
         )}
 
@@ -321,14 +354,7 @@ export function MemberDetailScreen({ route, navigation }: any) {
         ) : (
           <PrimaryButton
             label="Entrar em Contato"
-            onPress={() => {
-              if (Platform.OS === 'web') {
-                // @ts-ignore
-                window.alert('Este membro não tem telefone cadastrado.');
-              } else {
-                Alert.alert('Sem telefone', 'Este membro não tem telefone cadastrado.');
-              }
-            }}
+            onPress={() => showAlert('Sem telefone', 'Este membro não tem telefone cadastrado.')}
           />
         )}
         {canEdit && (
@@ -354,12 +380,24 @@ export function MemberDetailScreen({ route, navigation }: any) {
 }
 
 // ─── Cadastro / Edição de Membro ─────────────────────────────────────────────
+const MARITAL_OPTIONS = [
+  { key: 'solteiro', label: 'Solteiro(a)' },
+  { key: 'casado', label: 'Casado(a)' },
+  { key: 'divorciado', label: 'Divorciado(a)' },
+  { key: 'viuvo', label: 'Viúvo(a)' },
+];
+const STATUS_OPTIONS = [
+  { key: 'visitante', label: 'Visitante' },
+  { key: 'ativo', label: 'Ativo' },
+  { key: 'inativo', label: 'Inativo' },
+];
 
 export function AddMemberScreen({ navigation, route }: any) {
   const editingId: string | undefined = route.params?.memberId;
   const isEditing = !!editingId;
 
   const [loadingEdit, setLoadingEdit] = useState(isEditing);
+  const [editingMemberId, setEditingMemberId] = useState<string | undefined>(editingId);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
@@ -424,14 +462,15 @@ export function AddMemberScreen({ navigation, route }: any) {
         cars: cleanCars,
         carPlates,
       };
-      if (editingId) {
-        await updateMember(editingId, data);
+      if (editingMemberId) {
+        await updateMember(editingMemberId, data);
       } else {
         await addMember(data as any);
       }
       navigation.goBack();
     } catch (err: any) {
-      showAlert('Erro', err?.message ?? 'Não foi possível salvar. Tente novamente.');
+      const msg = err?.message ?? 'Não foi possível salvar. Tente novamente.';
+      showAlert('Erro', msg);
     } finally {
       setSaving(false);
     }
@@ -473,16 +512,36 @@ export function AddMemberScreen({ navigation, route }: any) {
 
       <View style={styles.formGroup}>
         <Text style={styles.formLabel}>ESTADO CIVIL</Text>
-        <ChipGroup options={MARITAL_OPTIONS} value={maritalStatus} onChange={setMaritalStatus} />
+        <View style={styles.chipRow}>
+          {MARITAL_OPTIONS.map((o) => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.chip, maritalStatus === o.key && styles.chipActive]}
+              onPress={() => setMaritalStatus(maritalStatus === o.key ? '' : o.key)}
+            >
+              <Text style={[styles.chipText, maritalStatus === o.key && styles.chipTextActive]}>
+                {o.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.formLabel}>STATUS</Text>
-        <ChipGroup
-          options={STATUS_OPTIONS}
-          value={status}
-          onChange={(v) => v && setStatus(v as MemberStatus)}
-        />
+        <View style={styles.chipRow}>
+          {STATUS_OPTIONS.map((o) => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.chip, status === o.key && styles.chipActive]}
+              onPress={() => setStatus(o.key as MemberStatus)}
+            >
+              <Text style={[styles.chipText, status === o.key && styles.chipTextActive]}>
+                {o.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <Text style={styles.sectionDivider}>VIDA NA COMUNIDADE</Text>
@@ -525,7 +584,7 @@ export function AddMemberScreen({ navigation, route }: any) {
           <View style={styles.carHeader}>
             <Text style={styles.formLabel}>VEÍCULO {i + 1}</Text>
             <TouchableOpacity onPress={() => removeCar(i)}>
-              <Text style={styles.removeText}>Remover</Text>
+              <Text style={{ color: '#C0392B', fontSize: 13, fontWeight: '600' }}>Remover</Text>
             </TouchableOpacity>
           </View>
           <TextInput
@@ -578,7 +637,7 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 20, right: 20, width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   fabText: { color: '#fff', fontSize: 24, lineHeight: 28 },
   memberHero: { backgroundColor: Colors.headerBg, padding: Spacing.xl, alignItems: 'center' },
-  heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, marginTop: 10, fontFamily: 'Inter_700Bold' },
+  heroName: { fontSize: 20, fontWeight: '700', color: Colors.headerText, marginTop: 10, fontFamily: 'Lora_600SemiBold' },
   heroRole: { fontSize: 11, color: Colors.textSecondary, marginTop: 4, letterSpacing: 1.2, textTransform: 'uppercase' },
   detailBody: { flex: 1, padding: Spacing.md },
   cardTitle: { fontSize: 10, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
@@ -587,7 +646,11 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase' },
   formInput: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, fontSize: 15, color: Colors.textPrimary },
   sectionDivider: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 14, marginTop: 2 },
-  removeText: { color: Colors.danger, fontSize: 13, fontWeight: '600' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
+  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  chipTextActive: { color: '#fff' },
   carCard: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 0 },
   carHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   addCarBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 12, alignItems: 'center' },
@@ -596,4 +659,11 @@ const styles = StyleSheet.create({
   btnEditText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDelete: { marginTop: 8, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: '#C0392B', alignItems: 'center' },
   btnDeleteText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  // Children section
+  childRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  childName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  childSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  childStatusDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 8 },
+  addChildBtn: { marginTop: 10, borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.md, borderStyle: 'dashed', paddingVertical: 10, alignItems: 'center' },
+  addChildBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 13 },
 });

@@ -40,7 +40,10 @@ import {
   getChildAttendanceHistory,
   markAttendance,
   removeAttendance,
+  notifyGuardianByPhone,
 } from '../services/kids';
+import { getMembers } from '../services/members';
+import { Member } from '../types';
 import { uploadToCloudinary } from '../services/cloudinary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -219,6 +222,8 @@ export function KidsDetailScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(true);
   const [markingPresence, setMarkingPresence] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [notifyGuardian, setNotifyGuardian] = useState<{ name: string; phone: string; memberId?: string } | null>(null);
+  const [sendingNotif, setSendingNotif] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -339,6 +344,48 @@ export function KidsDetailScreen({ navigation, route }: any) {
           {child.observations ? <Row label="Observações" value={child.observations} /> : null}
         </Card>
 
+        {/* Modal de notificação */}
+        <Modal visible={!!notifyGuardian} transparent animationType="slide" onRequestClose={() => setNotifyGuardian(null)}>
+          <View style={styles.notifOverlay}>
+            <View style={styles.notifModal}>
+              <Text style={styles.notifTitle}>Notificar {notifyGuardian?.name}</Text>
+              <Text style={styles.notifSub}>Selecione a mensagem:</Text>
+              {[
+                'Favor comparecer ao Redentor Kids.',
+                'Seu filho(a) solicita sua presença.',
+                'Redentor Kids está encerrando. Favor buscar seu filho(a).',
+                'Há uma ocorrência no Redentor Kids. Favor comparecer.',
+                'Lembrete: Redentor Kids acontece hoje!',
+              ].map((msg) => (
+                <TouchableOpacity
+                  key={msg}
+                  style={[styles.notifOption, sendingNotif && { opacity: 0.5 }]}
+                  disabled={sendingNotif}
+                  onPress={async () => {
+                    if (!notifyGuardian || !child) return;
+                    setSendingNotif(true);
+                    const result = await notifyGuardianByPhone(notifyGuardian.phone, child.name, msg)
+                      .catch(() => 'error' as const);
+                    setSendingNotif(false);
+                    setNotifyGuardian(null);
+                    if (result === 'sent') {
+                      showAlert('Notificação enviada!', `${notifyGuardian.name} foi notificado(a).`);
+                    } else {
+                      showAlert('Sem conta no app', `${notifyGuardian.name} não tem uma conta vinculada no aplicativo.`);
+                    }
+                  }}
+                >
+                  <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.notifOptionText}>{msg}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.notifCancel} onPress={() => setNotifyGuardian(null)}>
+                <Text style={styles.notifCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* Responsáveis */}
         <Card>
           <SectionTitle title="Responsáveis" />
@@ -348,6 +395,14 @@ export function KidsDetailScreen({ navigation, route }: any) {
                 <Text style={styles.guardianName}>{g.name}</Text>
                 <Text style={styles.guardianSub}>{g.relationship} · {g.phone}</Text>
               </View>
+              {isStaff && (
+                <TouchableOpacity
+                  style={styles.notifBtn}
+                  onPress={() => setNotifyGuardian({ name: g.name, phone: g.phone, memberId: g.memberId })}
+                >
+                  <Ionicons name="notifications-outline" size={18} color={Colors.primary} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.whatsappBtn}
                 onPress={() => openWhatsApp(g.phone, child.name)}
@@ -440,6 +495,51 @@ export function AddKidScreen({ navigation, route }: any) {
   const [photoURL, setPhotoURL] = useState<string | undefined>();
   const [observations, setObservations] = useState('');
   const [guardians, setGuardians] = useState<Guardian[]>([{ ...EMPTY_GUARDIAN }]);
+
+  // Member picker
+  const [members, setMembers] = useState<Member[]>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerGuardianIdx, setPickerGuardianIdx] = useState<number | null>(null);
+  const [memberSearch, setMemberSearch] = useState('');
+
+  useEffect(() => {
+    getMembers().then(setMembers).catch(() => {});
+  }, []);
+
+  const openMemberPicker = (idx: number) => {
+    setPickerGuardianIdx(idx);
+    setMemberSearch('');
+    setPickerVisible(true);
+  };
+
+  const selectMember = (member: Member) => {
+    if (pickerGuardianIdx === null) return;
+    setGuardians((prev) => {
+      const next = [...prev];
+      next[pickerGuardianIdx] = {
+        ...next[pickerGuardianIdx],
+        name: member.name,
+        phone: member.phone ?? next[pickerGuardianIdx].phone,
+        memberId: member.id,
+      };
+      return next;
+    });
+    setPickerVisible(false);
+    setPickerGuardianIdx(null);
+  };
+
+  const unlinkMember = (idx: number) => {
+    setGuardians((prev) => {
+      const next = [...prev];
+      const { memberId, ...rest } = next[idx];
+      next[idx] = rest;
+      return next;
+    });
+  };
+
+  const filteredMembers = members.filter((m) =>
+    m.name.toLowerCase().includes(memberSearch.toLowerCase())
+  );
 
   useEffect(() => {
     navigation.setOptions({ title: isEditing ? 'Editar Criança' : 'Nova Criança' });
@@ -539,6 +639,49 @@ export function AddKidScreen({ navigation, route }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
+
+      {/* Modal: seleção de membro como responsável */}
+      <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => setPickerVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>Selecionar responsável</Text>
+            <TouchableOpacity onPress={() => setPickerVisible(false)}>
+              <Ionicons name="close" size={24} color={Colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.searchBar, { margin: Spacing.md, marginTop: 0 }]}>
+            <Ionicons name="search-outline" size={16} color={Colors.textMuted} style={{ marginRight: 6 }} />
+            <TextInput
+              style={styles.searchInput}
+              value={memberSearch}
+              onChangeText={setMemberSearch}
+              placeholder="Buscar membro..."
+              placeholderTextColor={Colors.textMuted}
+              autoFocus
+            />
+          </View>
+          <FlatList
+            data={filteredMembers}
+            keyExtractor={(m) => m.id}
+            contentContainerStyle={{ paddingHorizontal: Spacing.md }}
+            ListEmptyComponent={<Text style={styles.empty}>Nenhum membro encontrado.</Text>}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.75}
+                onPress={() => selectMember(item)}
+              >
+                <Avatar name={item.name} size={40} index={item.avatarIndex ?? index} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.rowName}>{item.name}</Text>
+                  {item.phone ? <Text style={styles.rowSub}>{item.phone}</Text> : null}
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
+
       {/* Foto */}
       <View style={styles.photoSection}>
         {photoURL ? (
@@ -603,12 +746,29 @@ export function AddKidScreen({ navigation, route }: any) {
           <View key={i} style={styles.guardianCard}>
             <View style={styles.guardianCardHeader}>
               <Text style={styles.guardianCardTitle}>Responsável {i + 1}</Text>
-              {guardians.length > 1 && (
-                <TouchableOpacity onPress={() => removeGuardian(i)}>
-                  <Ionicons name="close-circle-outline" size={18} color={Colors.danger} />
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => openMemberPicker(i)} style={styles.linkMemberBtn}>
+                  <Ionicons name="person-add-outline" size={13} color={Colors.primary} style={{ marginRight: 3 }} />
+                  <Text style={styles.linkMemberText}>
+                    {g.memberId ? 'Trocar membro' : 'Vincular membro'}
+                  </Text>
                 </TouchableOpacity>
-              )}
+                {guardians.length > 1 && (
+                  <TouchableOpacity onPress={() => removeGuardian(i)}>
+                    <Ionicons name="close-circle-outline" size={18} color={Colors.danger} />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
+            {g.memberId && (
+              <View style={styles.linkedMemberBadge}>
+                <Ionicons name="checkmark-circle" size={14} color={Colors.activeText} style={{ marginRight: 4 }} />
+                <Text style={styles.linkedMemberText}>Membro vinculado</Text>
+                <TouchableOpacity onPress={() => unlinkMember(i)} style={{ marginLeft: 8 }}>
+                  <Ionicons name="close-circle-outline" size={14} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            )}
             <TextInput
               style={styles.input}
               value={g.name}
@@ -778,6 +938,29 @@ const styles = StyleSheet.create({
   guardianCardTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   addGuardianBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   addGuardianText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+
+  // Link member
+  linkMemberBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.primary },
+  linkMemberText: { fontSize: 11, fontWeight: '700', color: Colors.primary },
+  linkedMemberBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F4EA', borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 8, alignSelf: 'flex-start' },
+  linkedMemberText: { fontSize: 12, fontWeight: '600', color: Colors.activeText },
+
+  // Member picker modal
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface },
+  pickerTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
+
+  // Notification button (detail)
+  notifBtn: { padding: 8, backgroundColor: '#EEF2FF', borderRadius: 20, marginRight: 6 },
+
+  // Notification modal
+  notifOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  notifModal: { backgroundColor: Colors.surface, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, paddingBottom: 32 },
+  notifTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
+  notifSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md },
+  notifOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  notifOptionText: { fontSize: 14, color: Colors.textPrimary, flex: 1 },
+  notifCancel: { marginTop: Spacing.md, alignItems: 'center', paddingVertical: 10 },
+  notifCancelText: { fontSize: 14, fontWeight: '600', color: Colors.danger },
 
   // Botão chamada (lista)
   attendanceBtn: {
