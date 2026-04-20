@@ -14,6 +14,7 @@ import { Card } from '../components';
 import { showAlert } from '../utils/alert';
 import { useAuth } from '../context/AuthContext';
 import { getAllBanners, updateBannerImage, deleteBannerImage, BannerData } from '../services/banners';
+import { useBanners } from '../context/BannersContext';
 import { uploadToCloudinary } from '../services/cloudinary';
 
 const BANNER_META = [
@@ -33,6 +34,7 @@ type BannerState = {
 
 export default function BannersScreen() {
   const { appUser } = useAuth();
+  const { refreshBanners } = useBanners();
   const [loading, setLoading] = useState(true);
   const [banners, setBanners] = useState<Record<string, BannerState>>({});
 
@@ -93,6 +95,7 @@ export default function BannersScreen() {
         pendingURL: null,
         saving: false,
       });
+      await refreshBanners();
       showAlert('Atualizado!', 'O banner foi atualizado com sucesso.');
     } catch {
       update(id, { saving: false });
@@ -111,6 +114,7 @@ export default function BannersScreen() {
         data: { ...banners[id].data, imageURL: undefined },
         saving: false,
       });
+      await refreshBanners();
     } catch {
       update(id, { saving: false });
       showAlert('Erro', 'Não foi possível remover a imagem.');

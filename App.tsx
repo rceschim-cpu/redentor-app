@@ -16,6 +16,7 @@ import RootNavigator from './src/navigation';
 import { AuthProvider } from './src/context/AuthContext';
 import { FontScaleProvider } from './src/context/FontScaleContext';
 import { CustomAlertProvider } from './src/utils/customAlert';
+import { BannersProvider } from './src/context/BannersContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,12 +40,14 @@ export default function App() {
     <AuthProvider>
       <FontScaleProvider>
         <CustomAlertProvider>
-          <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-            <NavigationContainer>
-              <StatusBar style="light" />
-              <RootNavigator />
-            </NavigationContainer>
-          </View>
+          <BannersProvider>
+            <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+              <NavigationContainer>
+                <StatusBar style="light" />
+                <RootNavigator />
+              </NavigationContainer>
+            </View>
+          </BannersProvider>
         </CustomAlertProvider>
       </FontScaleProvider>
     </AuthProvider>

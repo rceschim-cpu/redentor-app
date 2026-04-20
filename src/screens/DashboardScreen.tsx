@@ -11,12 +11,11 @@ import {
   Image,
   PanResponder,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
-import { getAllBanners } from '../services/banners';
+import { useBanners } from '../context/BannersContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACCENT = '#E7C530';
@@ -70,25 +69,10 @@ function GeometricBg() {
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 export default function DashboardScreen({ navigation }: any) {
   const { user, appUser } = useAuth();
+  const { bannerImages } = useBanners();
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
   const activeBannerRef = useRef(0);
-  const [bannerImages, setBannerImages] = useState<Record<string, string | undefined>>({});
-
-  // Recarrega imagens dos banners sempre que a tela recebe foco
-  useFocusEffect(
-    React.useCallback(() => {
-      getAllBanners()
-        .then((all) => {
-          const images: Record<string, string | undefined> = {};
-          Object.entries(all).forEach(([id, data]) => {
-            images[id] = data.imageURL;
-          });
-          setBannerImages(images);
-        })
-        .catch(() => {/* silencioso — mantém defaults */});
-    }, [])
-  );
 
   const goToBanner = (idx: number) => {
     const clamped = Math.max(0, Math.min(idx, BANNERS.length - 1));
