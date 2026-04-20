@@ -11,10 +11,12 @@ import {
   Image,
   PanResponder,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { getAllBanners } from '../services/banners';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ACCENT = '#E7C530';
@@ -71,6 +73,22 @@ export default function DashboardScreen({ navigation }: any) {
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
   const activeBannerRef = useRef(0);
+  const [bannerImages, setBannerImages] = useState<Record<string, string | undefined>>({});
+
+  // Recarrega imagens dos banners sempre que a tela recebe foco
+  useFocusEffect(
+    React.useCallback(() => {
+      getAllBanners()
+        .then((all) => {
+          const images: Record<string, string | undefined> = {};
+          Object.entries(all).forEach(([id, data]) => {
+            images[id] = data.imageURL;
+          });
+          setBannerImages(images);
+        })
+        .catch(() => {/* silencioso — mantém defaults */});
+    }, [])
+  );
 
   const goToBanner = (idx: number) => {
     const clamped = Math.max(0, Math.min(idx, BANNERS.length - 1));
@@ -146,22 +164,38 @@ export default function DashboardScreen({ navigation }: any) {
             {...bannerPan.panHandlers}
             style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
           >
-            <TouchableOpacity
-              activeOpacity={0.88}
-              style={[styles.bannerSlide, { backgroundColor: BANNERS[activeBanner].color }]}
-              onPress={() => {
-                const b = BANNERS[activeBanner];
-                b.screen ? navigation.navigate(b.screen) : Alert.alert(b.title, b.sub);
-              }}
-            >
-              <View style={styles.bannerIconWrap}>
-                <Ionicons name={BANNERS[activeBanner].icon} size={26} color="rgba(255,255,255,0.9)" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.bannerTitle}>{BANNERS[activeBanner].title}</Text>
-                <Text style={styles.bannerSub}>{BANNERS[activeBanner].sub}</Text>
-              </View>
-            </TouchableOpacity>
+            {(() => {
+              const b = BANNERS[activeBanner];
+              const imageURL = bannerImages[b.id];
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.88}
+                  style={[styles.bannerSlide, { backgroundColor: b.color }]}
+                  onPress={() => b.screen ? navigation.navigate(b.screen) : Alert.alert(b.title, b.sub)}
+                >
+                  {imageURL ? (
+                    // Imagem personalizada cobre o slide inteiro
+                    <Image
+                      source={{ uri: imageURL }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode="cover"
+                    />
+                  ) : null}
+                  {/* Overlay de texto — sempre visível */}
+                  <View style={[styles.bannerOverlay, imageURL ? styles.bannerOverlayImg : null]}>
+                    {!imageURL && (
+                      <View style={styles.bannerIconWrap}>
+                        <Ionicons name={b.icon} size={26} color="rgba(255,255,255,0.9)" />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.bannerTitle}>{b.title}</Text>
+                      <Text style={styles.bannerSub}>{b.sub}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })()}
           </View>
 
           {/* Indicadores coloridos */}
@@ -328,6 +362,24 @@ const styles = StyleSheet.create({
     gap: 14,
     minHeight: 88,
     overflow: 'hidden',
+  },
+  bannerOverlay: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  bannerOverlayImg: {
+    // quando há imagem, escurece levemente o rodapé para o texto ser legível
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(0,0,0,0.38)',
+    borderBottomLeftRadius: Radius.lg,
+    borderBottomRightRadius: Radius.lg,
   },
   bannerIconWrap: {
     width: 46,
