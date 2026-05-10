@@ -1,11 +1,12 @@
 // ─── Roles ────────────────────────────────────────────────────────────────────
-export type UserRole = 'administrador' | 'pastor' | 'lider' | 'membro';
+export type UserRole = 'administrador' | 'pastor' | 'lider' | 'lider_ministerio' | 'membro';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  administrador: 'Administrador',
-  pastor: 'Pastor',
-  lider: 'Líder de PG',
-  membro: 'Membro',
+  administrador:    'Administrador',
+  pastor:           'Pastor',
+  lider:            'Líder de PG',
+  lider_ministerio: 'Líder de Ministério',
+  membro:           'Membro',
 };
 
 // ─── Perfil de usuário (Firestore /users/{uid}) ───────────────────────────────
@@ -154,6 +155,89 @@ export interface GroupMaterial {
   uploadedBy: string;
   uploaderName: string;
   uploadedAt: string;
+}
+
+// ─── Ministérios ──────────────────────────────────────────────────────────────
+export type MinistryType =
+  | 'louvor'
+  | 'cultos'
+  | 'recepcao'
+  | 'pgs'
+  | 'jovens'
+  | 'adolescentes'
+  | 'kids'
+  | 'outro';
+
+export const MINISTRY_LABELS: Record<MinistryType, string> = {
+  louvor:       'Louvor',
+  cultos:       'Cultos',
+  recepcao:     'Recepção',
+  pgs:          'Núcleo de PGs',
+  jovens:       'Jovens',
+  adolescentes: 'Adolescentes',
+  kids:         'Kids',
+  outro:        'Outro',
+};
+
+export const MINISTRY_ICONS: Record<MinistryType, string> = {
+  louvor:       'musical-notes',
+  cultos:       'mic',
+  recepcao:     'happy',
+  pgs:          'people-circle',
+  jovens:       'flame',
+  adolescentes: 'rocket',
+  kids:         'color-palette',
+  outro:        'star',
+};
+
+export interface Ministry {
+  id: string;
+  name: string;
+  type: MinistryType;
+  description?: string;
+  meetingDay?: string;       // Domingo, Segunda...
+  meetingTime?: string;      // 19:30
+  recurrence?: 'semanal' | 'quinzenal' | 'mensal';
+  location?: string;
+  leaderIds: string[];       // memberIds dos líderes
+  leaderNames?: string[];    // desnormalizado
+  memberCount?: number;
+  status: 'ativo' | 'inativo';
+  createdAt: string;
+  createdBy?: string;
+}
+
+export interface MinistryMembership {
+  id: string;                // = memberId
+  ministryId: string;
+  memberId: string;
+  memberName: string;
+  joinedAt: string;
+  termVersion: number;
+  termAcceptedAt: string;
+  status: 'ativo' | 'inativo';
+  role?: 'lider' | 'voluntario';
+}
+
+export interface ScheduleAssignment {
+  memberId: string;
+  memberName: string;
+  role?: string;             // ex: "Vocal", "Guitarra", "Recepção 1"
+}
+
+export interface MinistrySchedule {
+  id: string;
+  ministryId: string;
+  ministryName: string;
+  date: string;              // YYYY-MM-DD
+  time?: string;             // HH:mm
+  title?: string;            // "Culto Dominical 10h"
+  description?: string;
+  assignments: ScheduleAssignment[];
+  createdAt: string;
+  createdBy?: string;
+  // Para recorrentes — usado para gerar série automática
+  recurrenceParent?: string;
 }
 
 // ─── User (legado — mantido para compatibilidade) ─────────────────────────────

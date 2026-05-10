@@ -39,6 +39,7 @@ const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
   { icon: 'play-circle-outline',   label: 'Cultos',       screen: 'Cultos' },
   { icon: 'car-outline',           label: 'Estacion.',    screen: 'Parking' },
   { icon: 'happy-outline',         label: 'Kids',         screen: 'KidsList' },
+  { icon: 'hand-right-outline',    label: 'Ministérios',  screen: 'Ministries' },
   { icon: 'settings-outline',      label: 'Config.',      screen: 'Settings' },
 ];
 

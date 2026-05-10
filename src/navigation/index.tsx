@@ -30,6 +30,13 @@ import {
 import { GroupsListScreen, GroupDetailScreen } from '../screens/GroupsScreens';
 import { KidsListScreen, KidsDetailScreen, AddKidScreen } from '../screens/KidsScreens';
 import KidsAttendanceScreen from '../screens/KidsAttendanceScreen';
+import {
+  MinistriesListScreen,
+  MinistryDetailScreen,
+  MinistryEditScreen,
+  AddMinistryScreen,
+} from '../screens/MinistriesScreens';
+import AddScheduleScreen from '../screens/AddScheduleScreen';
 
 const RootStack  = createNativeStackNavigator();
 const Tab        = createBottomTabNavigator();
@@ -93,6 +100,11 @@ function HomeStackScreen() {
       <HomeStack.Screen name="KidsAttendance" component={KidsAttendanceScreen} options={{ title: 'Chamada do Dia' }} />
       <HomeStack.Screen name="MemberDetail"  component={MemberDetailScreen} options={{ title: '' }} />
       <HomeStack.Screen name="GroupDetail"   component={GroupDetailScreen}  options={{ title: '' }} />
+      <HomeStack.Screen name="Ministries"    component={MinistriesListScreen} options={{ title: 'Ministérios' }} />
+      <HomeStack.Screen name="MinistryDetail" component={MinistryDetailScreen} options={{ title: '' }} />
+      <HomeStack.Screen name="MinistryEdit"  component={MinistryEditScreen} options={{ title: 'Editar Ministério' }} />
+      <HomeStack.Screen name="AddMinistry"   component={AddMinistryScreen}  options={{ title: 'Novo Ministério' }} />
+      <HomeStack.Screen name="AddSchedule"   component={AddScheduleScreen}  options={{ title: 'Nova Escala' }} />
     </HomeStack.Navigator>
   );
 }

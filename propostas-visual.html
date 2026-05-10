@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propostas Visuais — Redentor App</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #2A2A2A;
+    display: flex;
+    gap: 32px;
+    padding: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height: 100vh;
+  }
+
+  .proposal-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .proposal-label {
+    color: #fff;
+    font-size: 13px;
+    font-family: sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .proposal-title {
+    color: #fff;
+    font-size: 18px;
+    font-family: Georgia, serif;
+    text-align: center;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 320px;
+    height: 620px;
+    border-radius: 40px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border: 6px solid #111;
+    position: relative;
+  }
+
+  /* ─── Arch bar ─── */
+  .arch-bar {
+    display: flex;
+    height: 4px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .arch-bar span { flex: 1; }
+
+  /* ─── Header ─── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px 12px;
+    flex-shrink: 0;
+  }
+  .header-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .header-text { flex: 1; }
+  .header-title { font-size: 15px; font-family: Georgia, serif; font-weight: 600; }
+  .header-sub { font-size: 10px; font-family: sans-serif; opacity: 0.6; margin-top: 1px; }
+  .header-bell { font-size: 18px; opacity: 0.6; }
+
+  /* ─── Content ─── */
+  .content {
+    flex: 1;
+    overflow: hidden;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ─── Section label ─── */
+  .section-label {
+    font-size: 10px;
+    font-family: sans-serif;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 2px;
+  }
+
+  /* ─── Stat row ─── */
+  .stat-row {
+    display: flex;
+    gap: 8px;
+  }
+  .stat-card {
+    flex: 1;
+    border-radius: 12px;
+    padding: 12px;
+    border-width: 1px;
+    border-style: solid;
+  }
+  .stat-card .stat-num { font-size: 22px; font-family: Georgia, serif; font-weight: 600; }
+  .stat-card .stat-lbl { font-size: 10px; font-family: sans-serif; opacity: 0.55; margin-top: 2px; }
+
+  /* ─── Member card ─── */
+  .member-card {
+    border-radius: 12px;
+    padding: 11px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-width: 1px;
+    border-style: solid;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-family: sans-serif;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .member-info { flex: 1; }
+  .member-name { font-size: 13px; font-family: Georgia, serif; font-weight: 600; }
+  .member-role { font-size: 10px; font-family: sans-serif; opacity: 0.5; margin-top: 1px; }
+  .badge {
+    font-size: 9px;
+    font-family: sans-serif;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 99px;
+  }
+
+  /* ─── Tab bar ─── */
+  .tab-bar {
+    display: flex;
+    padding: 8px 0 12px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-family: sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    opacity: 0.45;
+  }
+  .tab.active { opacity: 1; }
+  .tab-icon { font-size: 16px; }
+
+
+  /* ══════════════════════════════════════
+     PROPOSTA 1 — Pedra e Céu
+  ══════════════════════════════════════ */
+  .p1 .arch-bar span:nth-child(1) { background: #C07888; }
+  .p1 .arch-bar span:nth-child(2) { background: #8090C0; }
+  .p1 .arch-bar span:nth-child(3) { background: #C8B45A; }
+  .p1 .arch-bar span:nth-child(4) { background: #789E6E; }
+
+  .p1 .header { background: #FFFFFF; }
+  .p1 .header-title { color: #1A1A1A; }
+  .p1 .header-logo { background: #F0EEE8; }
+
+  .p1 .content { background: #D6D4CF; }
+  .p1 .section-label { color: #1A1A1A; }
+
+  .p1 .stat-card { background: #FFFFFF; border-color: rgba(0,0,0,0.08); }
+  .p1 .stat-card .stat-num { color: #3A6BA8; }
+  .p1 .stat-card .stat-lbl { color: #1A1A1A; }
+
+  .p1 .member-card { background: #FFFFFF; border-color: rgba(0,0,0,0.08); }
+  .p1 .member-name { color: #1A1A1A; }
+
+  .p1 .avatar { background: #E0EAF5; color: #3A6BA8; }
+  .p1 .badge { background: #E6F0E6; color: #3A7A46; }
+
+  .p1 .tab-bar { background: #FFFFFF; border-top-color: rgba(0,0,0,0.1); }
+  .p1 .tab { color: #1A1A1A; }
+  .p1 .tab.active { color: #3A6BA8; }
+
+
+  /* ══════════════════════════════════════
+     PROPOSTA 2 — Céu de Curitiba
+  ══════════════════════════════════════ */
+  .p2 .arch-bar span:nth-child(1) { background: #C8A84B; }
+  .p2 .arch-bar span:nth-child(2) { background: #FFFFFF; }
+  .p2 .arch-bar span:nth-child(3) { background: #C8A84B; }
+  .p2 .arch-bar span:nth-child(4) { background: #FFFFFF; }
+
+  .p2 .header { background: #1E4D8C; }
+  .p2 .header-title { color: #FFFFFF; }
+  .p2 .header-logo { background: rgba(255,255,255,0.15); }
+
+  .p2 .content { background: #ECEEF2; }
+  .p2 .section-label { color: #1A2A3A; }
+
+  .p2 .stat-card { background: #FFFFFF; border-color: rgba(30,77,140,0.12); }
+  .p2 .stat-card .stat-num { color: #1E4D8C; }
+  .p2 .stat-card .stat-lbl { color: #1A2A3A; }
+
+  .p2 .member-card { background: #FFFFFF; border-color: rgba(30,77,140,0.12); }
+  .p2 .member-name { color: #1A2A3A; }
+
+  .p2 .avatar { background: #D8E5F5; color: #1E4D8C; }
+  .p2 .badge { background: #E6F0E6; color: #2A7A46; }
+
+  .p2 .tab-bar { background: #FFFFFF; border-top-color: rgba(30,77,140,0.1); }
+  .p2 .tab { color: #1A2A3A; }
+  .p2 .tab.active { color: #1E4D8C; }
+
+
+  /* ══════════════════════════════════════
+     PROPOSTA 3 — Cal e Sombra
+  ══════════════════════════════════════ */
+  .p3 .arch-bar span:nth-child(1) { background: #C07888; }
+  .p3 .arch-bar span:nth-child(2) { background: #8090C0; }
+  .p3 .arch-bar span:nth-child(3) { background: #C8B45A; }
+  .p3 .arch-bar span:nth-child(4) { background: #789E6E; }
+
+  .p3 .header { background: #F5F4F2; }
+  .p3 .header-title { color: #111111; }
+  .p3 .header-logo { background: #ECEAE6; }
+
+  .p3 .content { background: #B8B5B0; }
+  .p3 .section-label { color: #111111; }
+
+  .p3 .stat-card { background: #FFFFFF; border-color: rgba(0,0,0,0.1); }
+  .p3 .stat-card .stat-num { color: #4A7AB5; }
+  .p3 .stat-card .stat-lbl { color: #111111; }
+
+  .p3 .member-card { background: #FFFFFF; border-color: rgba(0,0,0,0.1); }
+  .p3 .member-name { color: #111111; }
+
+  .p3 .avatar { background: #E0EAF5; color: #4A7AB5; }
+  .p3 .badge { background: #E6F0E6; color: #3A7A46; }
+
+  .p3 .tab-bar { background: #F5F4F2; border-top-color: rgba(0,0,0,0.12); }
+  .p3 .tab { color: #111111; }
+  .p3 .tab.active { color: #4A7AB5; }
+</style>
+</head>
+<body>
+
+<!-- ── PROPOSTA 1 ── -->
+<div class="proposal-wrap">
+  <div class="proposal-label">Proposta 1</div>
+  <div class="proposal-title">Pedra e Céu</div>
+  <div class="phone p1">
+    <div class="arch-bar"><span></span><span></span><span></span><span></span></div>
+    <div class="header">
+      <div class="header-logo">⛪</div>
+      <div class="header-text">
+        <div class="header-title">Comunidade do Redentor</div>
+        <div class="header-sub">Bom dia, Pastor André</div>
+      </div>
+      <div class="header-bell">🔔</div>
+    </div>
+    <div class="content">
+      <div class="section-label">Resumo</div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num">248</div>
+          <div class="stat-lbl">Membros</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">12</div>
+          <div class="stat-lbl">Grupos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">3</div>
+          <div class="stat-lbl">Eventos</div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:4px">Membros recentes</div>
+      <div class="member-card">
+        <div class="avatar">MA</div>
+        <div class="member-info">
+          <div class="member-name">Maria Aparecida</div>
+          <div class="member-role">Grupo Alfa · Líder</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">JC</div>
+        <div class="member-info">
+          <div class="member-name">João Carlos</div>
+          <div class="member-role">Grupo Beta</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">LF</div>
+        <div class="member-info">
+          <div class="member-name">Luísa Fernanda</div>
+          <div class="member-role">Sem grupo</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active"><span class="tab-icon">⌂</span>Início</div>
+      <div class="tab"><span class="tab-icon">●●</span>Membros</div>
+      <div class="tab"><span class="tab-icon">▲</span>Grupos</div>
+      <div class="tab"><span class="tab-icon">✦</span>160 Anos</div>
+    </div>
+  </div>
+  <div style="color:#aaa; font-family:sans-serif; font-size:11px; text-align:center; max-width:320px">
+    Header branco · Fundo cinza-pedra · Cards brancos · Azul vitral como acento
+  </div>
+</div>
+
+<!-- ── PROPOSTA 2 ── -->
+<div class="proposal-wrap">
+  <div class="proposal-label">Proposta 2</div>
+  <div class="proposal-title">Céu de Curitiba</div>
+  <div class="phone p2">
+    <div class="arch-bar"><span></span><span></span><span></span><span></span></div>
+    <div class="header">
+      <div class="header-logo">⛪</div>
+      <div class="header-text">
+        <div class="header-title">Comunidade do Redentor</div>
+        <div class="header-sub">Bom dia, Pastor André</div>
+      </div>
+      <div class="header-bell" style="color:white">🔔</div>
+    </div>
+    <div class="content">
+      <div class="section-label">Resumo</div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num">248</div>
+          <div class="stat-lbl">Membros</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">12</div>
+          <div class="stat-lbl">Grupos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">3</div>
+          <div class="stat-lbl">Eventos</div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:4px">Membros recentes</div>
+      <div class="member-card">
+        <div class="avatar">MA</div>
+        <div class="member-info">
+          <div class="member-name">Maria Aparecida</div>
+          <div class="member-role">Grupo Alfa · Líder</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">JC</div>
+        <div class="member-info">
+          <div class="member-name">João Carlos</div>
+          <div class="member-role">Grupo Beta</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">LF</div>
+        <div class="member-info">
+          <div class="member-name">Luísa Fernanda</div>
+          <div class="member-role">Sem grupo</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active"><span class="tab-icon">⌂</span>Início</div>
+      <div class="tab"><span class="tab-icon">●●</span>Membros</div>
+      <div class="tab"><span class="tab-icon">▲</span>Grupos</div>
+      <div class="tab"><span class="tab-icon">✦</span>160 Anos</div>
+    </div>
+  </div>
+  <div style="color:#aaa; font-family:sans-serif; font-size:11px; text-align:center; max-width:320px">
+    Header azul profundo · Fundo azul-acinzentado claro · Cards brancos · Dourado como acento
+  </div>
+</div>
+
+<!-- ── PROPOSTA 3 ── -->
+<div class="proposal-wrap">
+  <div class="proposal-label">Proposta 3</div>
+  <div class="proposal-title">Cal e Sombra</div>
+  <div class="phone p3">
+    <div class="arch-bar"><span></span><span></span><span></span><span></span></div>
+    <div class="header">
+      <div class="header-logo">⛪</div>
+      <div class="header-text">
+        <div class="header-title">Comunidade do Redentor</div>
+        <div class="header-sub">Bom dia, Pastor André</div>
+      </div>
+      <div class="header-bell">🔔</div>
+    </div>
+    <div class="content">
+      <div class="section-label">Resumo</div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num">248</div>
+          <div class="stat-lbl">Membros</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">12</div>
+          <div class="stat-lbl">Grupos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">3</div>
+          <div class="stat-lbl">Eventos</div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:4px">Membros recentes</div>
+      <div class="member-card">
+        <div class="avatar">MA</div>
+        <div class="member-info">
+          <div class="member-name">Maria Aparecida</div>
+          <div class="member-role">Grupo Alfa · Líder</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">JC</div>
+        <div class="member-info">
+          <div class="member-name">João Carlos</div>
+          <div class="member-role">Grupo Beta</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+      <div class="member-card">
+        <div class="avatar">LF</div>
+        <div class="member-info">
+          <div class="member-name">Luísa Fernanda</div>
+          <div class="member-role">Sem grupo</div>
+        </div>
+        <div class="badge">Ativo</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active"><span class="tab-icon">⌂</span>Início</div>
+      <div class="tab"><span class="tab-icon">●●</span>Membros</div>
+      <div class="tab"><span class="tab-icon">▲</span>Grupos</div>
+      <div class="tab"><span class="tab-icon">✦</span>160 Anos</div>
+    </div>
+  </div>
+  <div style="color:#aaa; font-family:sans-serif; font-size:11px; text-align:center; max-width:320px">
+    Header quase-branco · Fundo cinza-concreto forte · Cards brancos · Azul vitral como acento
+  </div>
+</div>
+
+</body>
+</html>
