@@ -7,6 +7,15 @@ import { Ministry, MinistryMembership, MinistryType } from '../types';
 
 const COL = 'ministries';
 
+// Remove campos undefined — Firestore rejeita undefined em writes
+function cleanData<T extends Record<string, any>>(data: T): Partial<T> {
+  const out: any = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 // ─── Ministérios ──────────────────────────────────────────────────────────────
 export async function getMinistries(): Promise<Ministry[]> {
   const snap = await getDocs(query(collection(db, COL), orderBy('name')));
@@ -21,11 +30,11 @@ export async function getMinistry(id: string): Promise<Ministry | null> {
 export async function createMinistry(
   data: Omit<Ministry, 'id' | 'createdAt' | 'memberCount'>
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COL), {
+  const ref = await addDoc(collection(db, COL), cleanData({
     ...data,
     memberCount: 0,
     createdAt: new Date().toISOString(),
-  });
+  }));
   return ref.id;
 }
 
@@ -33,7 +42,7 @@ export async function updateMinistry(
   id: string,
   patch: Partial<Omit<Ministry, 'id' | 'createdAt'>>
 ): Promise<void> {
-  await updateDoc(doc(db, COL, id), patch as any);
+  await updateDoc(doc(db, COL, id), cleanData(patch) as any);
 }
 
 export async function deleteMinistry(id: string): Promise<void> {

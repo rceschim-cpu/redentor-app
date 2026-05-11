@@ -480,8 +480,9 @@ function MinistryFormScreen({ ministryId, navigation }: any) {
         });
       }
       navigation.goBack();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível salvar.');
+    } catch (err: any) {
+      console.error('Erro ao salvar ministério:', err);
+      Alert.alert('Erro ao salvar', err?.message ?? 'Verifique sua conexão e tente novamente.');
     } finally {
       setSaving(false);
     }

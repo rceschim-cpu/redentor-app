@@ -8,6 +8,14 @@ import { MinistrySchedule, ScheduleAssignment } from '../types';
 const COL = 'ministries';
 const SUB = 'schedules';
 
+function cleanData<T extends Record<string, any>>(data: T): Partial<T> {
+  const out: any = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 // ─── CRUD básico ──────────────────────────────────────────────────────────────
 export async function getSchedules(ministryId: string): Promise<MinistrySchedule[]> {
   const snap = await getDocs(query(collection(db, COL, ministryId, SUB), orderBy('date', 'asc')));
@@ -22,10 +30,10 @@ export async function getSchedule(ministryId: string, scheduleId: string): Promi
 export async function createSchedule(
   data: Omit<MinistrySchedule, 'id' | 'createdAt'>
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COL, data.ministryId, SUB), {
+  const ref = await addDoc(collection(db, COL, data.ministryId, SUB), cleanData({
     ...data,
     createdAt: new Date().toISOString(),
-  });
+  }));
   return ref.id;
 }
 
@@ -34,7 +42,7 @@ export async function updateSchedule(
   scheduleId: string,
   patch: Partial<Omit<MinistrySchedule, 'id' | 'createdAt'>>
 ): Promise<void> {
-  await updateDoc(doc(db, COL, ministryId, SUB, scheduleId), patch as any);
+  await updateDoc(doc(db, COL, ministryId, SUB, scheduleId), cleanData(patch) as any);
 }
 
 export async function deleteSchedule(ministryId: string, scheduleId: string): Promise<void> {
@@ -57,22 +65,22 @@ export async function createScheduleSeries(
   // Cria o "pai" da série na primeira data
   const parentRef = doc(collection(db, COL, base.ministryId, SUB));
   ids.push(parentRef.id);
-  batch.set(parentRef, {
+  batch.set(parentRef, cleanData({
     ...base,
     date: dates[0],
     createdAt: now,
-  });
+  }));
 
   // Cria as ocorrências subsequentes apontando para o parent
   for (let i = 1; i < dates.length; i++) {
     const ref = doc(collection(db, COL, base.ministryId, SUB));
     ids.push(ref.id);
-    batch.set(ref, {
+    batch.set(ref, cleanData({
       ...base,
       date: dates[i],
       recurrenceParent: parentRef.id,
       createdAt: now,
-    });
+    }));
   }
 
   await batch.commit();
