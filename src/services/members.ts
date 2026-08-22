@@ -15,9 +15,11 @@ import { Member } from '../types';
 const COL = 'members';
 
 export async function getMembers(): Promise<Member[]> {
-  const q = query(collection(db, COL), orderBy('name'));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Member));
+  // Sem orderBy no Firestore: a cláusula exclui documentos sem o campo 'name'
+  const snap = await getDocs(collection(db, COL));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Member))
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'pt-BR'));
 }
 
 export async function getMember(id: string): Promise<Member | null> {

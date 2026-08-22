@@ -49,16 +49,20 @@ export async function updateUserProfile(
   await updateDoc(doc(db, COL, uid), clean);
 }
 
+// Sem orderBy no Firestore: a cláusula exclui documentos sem o campo 'name',
+// o que ocultava usuários recém-cadastrados que ainda não completaram o perfil
+const byName = (a: AppUserProfile, b: AppUserProfile) =>
+  (a.name ?? '').localeCompare(b.name ?? '', 'pt-BR');
+
 export async function getUsersByRole(role: UserRole): Promise<AppUserProfile[]> {
-  const q = query(collection(db, COL), where('role', '==', role), orderBy('name'));
+  const q = query(collection(db, COL), where('role', '==', role));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile));
+  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile)).sort(byName);
 }
 
 export async function getAllUsers(): Promise<AppUserProfile[]> {
-  const q = query(collection(db, COL), orderBy('name'));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile));
+  const snap = await getDocs(collection(db, COL));
+  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUserProfile)).sort(byName);
 }
 
 export async function unlinkMemberFromUser(uid: string): Promise<void> {

@@ -15,10 +15,13 @@ import { Group } from '../types';
 
 const COL = 'groups';
 
+// Sem orderBy no Firestore: a cláusula exclui documentos sem o campo 'name'
+const byName = (a: Group, b: Group) =>
+  (a.name ?? '').localeCompare(b.name ?? '', 'pt-BR');
+
 export async function getGroups(): Promise<Group[]> {
-  const q = query(collection(db, COL), orderBy('name'));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Group));
+  const snap = await getDocs(collection(db, COL));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Group)).sort(byName);
 }
 
 export async function getGroup(id: string): Promise<Group | null> {
@@ -28,9 +31,9 @@ export async function getGroup(id: string): Promise<Group | null> {
 }
 
 export async function getGroupsByLeader(leaderId: string): Promise<Group[]> {
-  const q = query(collection(db, COL), where('leaderId', '==', leaderId), orderBy('name'));
+  const q = query(collection(db, COL), where('leaderId', '==', leaderId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Group));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Group)).sort(byName);
 }
 
 export async function createGroup(
