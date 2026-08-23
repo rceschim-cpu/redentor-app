@@ -8,9 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Card } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
 import {
   Ministry, MinistryMembership, MinistrySchedule,
-  MINISTRY_LABELS, MINISTRY_ICONS, MinistryType,
+  MINISTRY_LABELS, MINISTRY_ICONS, MinistryType, UserRole,
 } from '../types';
 import {
   getMinistries, getMinistry, createMinistry, updateMinistry,
@@ -24,8 +25,8 @@ import { VOLUNTEER_TERM_TEXT, VOLUNTEER_TERM_VERSION } from '../constants/volunt
 const ACCENT = '#E7C530';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function isAdmin(role?: string) {
-  return role === 'administrador' || role === 'pastor';
+function isAdmin(role?: UserRole) {
+  return can(role, 'ministerio', 'editar');
 }
 function isLeaderOf(ministry: Ministry, memberId?: string) {
   return !!memberId && ministry.leaderIds.includes(memberId);

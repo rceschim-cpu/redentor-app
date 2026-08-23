@@ -13,9 +13,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppText as Text } from '../components';
 import { Card } from '../components';
 import { useAuth } from '../context/AuthContext';
-import { getMaterials, uploadMaterial, deleteMaterial } from '../services/materials';
+import { can } from '../services/permissions';
+import { getMaterials, uploadMaterial, deleteMaterial, filterByAudience } from '../services/materials';
 import { Colors, Radius, Spacing } from '../theme';
-import { GroupMaterial } from '../types';
+import { GroupMaterial, MaterialAudience } from '../types';
 import { showAlert, showConfirm } from '../utils/alert';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -60,6 +61,7 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
   const { user, appUser } = useAuth();
 
   const [materials, setMaterials] = useState<GroupMaterial[]>([]);
+  const [tab, setTab] = useState<MaterialAudience>('geral');
   const [loading, setLoading] = useState(true);
 
   // Upload form state
@@ -72,8 +74,9 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
   // Ref for the hidden web file input
   const fileInputRef = useRef<any>(null);
 
-  const canManage =
-    appUser?.role === 'administrador' || appUser?.role === 'pastor';
+  const canManage = can(appUser?.role, 'material_geral', 'criar');
+  const canSeeLeaderMaterials = can(appUser?.role, 'material_lideres', 'visualizar');
+  const canUploadLeaderMaterials = can(appUser?.role, 'material_lideres', 'criar');
 
   // ─── Load materials ──────────────────────────────────────────────────────
 
@@ -148,7 +151,8 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
         title.trim(),
         description.trim(),
         user.uid,
-        appUser.name
+        appUser.name,
+        tab
       );
       await loadMaterials();
       setShowForm(false);
@@ -321,10 +325,32 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
     );
   }
 
+  const visible = filterByAudience(materials, tab);
+
   return (
     <View style={styles.container}>
+      {canSeeLeaderMaterials && (
+        <View style={styles.tabs}>
+          {([
+            { key: 'geral' as MaterialAudience,   label: 'Todos do PG' },
+            { key: 'lideres' as MaterialAudience, label: 'Só líderes' },
+          ]).map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.tab, tab === t.key && styles.tabActive]}
+              onPress={() => { setTab(t.key); setShowForm(false); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <FlatList
-        data={materials}
+        data={visible}
         keyExtractor={(m) => m.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={showForm ? renderUploadForm() : null}
@@ -345,7 +371,7 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
       />
 
       {/* FAB — add button (admins/pastors only) */}
-      {canManage && !showForm && (
+      {(tab === 'lideres' ? canUploadLeaderMaterials : canManage) && !showForm && (
         <TouchableOpacity
           style={styles.fab}
           onPress={handleAddPress}
@@ -361,6 +387,19 @@ export default function GroupMaterialsScreen({ route, navigation }: any) {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  tabs: {
+    flexDirection: 'row', gap: 8,
+    paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: 4,
+  },
+  tab: {
+    flex: 1, minHeight: 44, borderRadius: Radius.full,
+    borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  tabText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  tabTextActive: { color: '#fff' },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

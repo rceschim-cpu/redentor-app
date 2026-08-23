@@ -9,19 +9,13 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Colors, Spacing, Radius } from '../theme';
+import { Colors, Spacing, Radius, ROLE_BADGE } from '../theme';
 import { Avatar } from '../components';
-import { AppUserProfile, UserRole, ROLE_LABELS } from '../types';
+import { AppUserProfile, UserRole, ROLE_LABELS, ROLE_ORDER } from '../types';
 import { getAllUsers, updateUserProfile } from '../services/userProfile';
 
-const ROLES: UserRole[] = ['administrador', 'pastor', 'lider', 'membro'];
-
-const ROLE_STYLE: Record<UserRole, { bg: string; fg: string }> = {
-  administrador: { bg: '#EDE9F7', fg: '#7B5EA7' },
-  pastor:        { bg: '#E8F2FA', fg: '#2D6EA0' },
-  lider:         { bg: '#E8F4EA', fg: '#3B7A46' },
-  membro:        { bg: Colors.borderLight, fg: Colors.textSecondary },
-};
+const ROLES: UserRole[] = ROLE_ORDER;
+const ROLE_STYLE = ROLE_BADGE;
 
 export default function UsersScreen() {
   const [users, setUsers] = useState<AppUserProfile[]>([]);

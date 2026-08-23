@@ -1,6 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() {
+      return request.auth != null && userRole() == 'administrador';
+    }
+    function isStaff() {
+      return request.auth != null && userRole() in ['administrador', 'pastor'];
+    }
+
 
     // Usuários — qualquer autenticado pode ler; escrita no próprio perfil
     // ou por outro autenticado (para admin alterar role de outros usuários)
@@ -61,6 +72,30 @@ service cloud.firestore {
       match /schedules/{scheduleId} {
         allow read, write: if request.auth != null;
       }
+    }
+
+    // ── Matriz de permissões ──────────────────────────────────────────────
+    // Leitura por qualquer autenticado: o app carrega a matriz no boot para
+    // saber o que exibir. Escrita apenas por administrador.
+    match /config/permissions {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // ── Solicitações de mudança de perfil ─────────────────────────────────
+    match /role_requests/{id} {
+      // Cada um lê as próprias; pastor e administrador leem todas
+      allow read: if request.auth != null
+                  && (resource.data.uid == request.auth.uid || isStaff());
+
+      // Só dá para abrir pedido em nome próprio, e sempre como pendente
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'pendente';
+
+      // Aprovar ou recusar é exclusivo de pastor e administrador
+      allow update: if isStaff();
+      allow delete: if isAdmin();
     }
   }
 }

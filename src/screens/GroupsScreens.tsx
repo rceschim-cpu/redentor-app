@@ -18,7 +18,7 @@ import { Group, GroupMembership, GroupMaterial } from '../types';
 import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/groups';
 import { getMemberships, getPendingRequests, getUserMembership, requestToJoin, removeMember, transferMember } from '../services/memberships';
 import { getMaterials, uploadMaterial, deleteMaterial } from '../services/materials';
-import { canCreateGroup, canManageGroup, canViewRequests } from '../services/permissions';
+import { can, canOn } from '../services/permissions';
 import { showAlert, showConfirm } from '../utils/alert';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -69,8 +69,8 @@ export function GroupsListScreen({ navigation }: any) {
   const [pendingTitle, setPendingTitle] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  const canCreate = appUser ? canCreateGroup(appUser.role) : false;
-  const canUploadMaterials = appUser?.role === 'pastor' || appUser?.role === 'administrador';
+  const canCreate = can(appUser?.role, 'grupo', 'criar');
+  const canUploadMaterials = can(appUser?.role, 'material_geral', 'criar');
 
   useFocusEffect(
     useCallback(() => {
@@ -179,7 +179,9 @@ export function GroupsListScreen({ navigation }: any) {
               }
               renderItem={({ item: group }) => {
                 const hasPending = (group.pendingCount ?? 0) > 0;
-                const showPending = appUser && canViewRequests(appUser.role, user?.uid ?? '', group.leaderId) && hasPending;
+                const showPending = hasPending && canOn(appUser?.role, 'grupo', 'editar', {
+                  userId: user?.uid, ownerId: group.leaderId,
+                });
                 return (
                   <TouchableOpacity
                     style={styles.groupCard}
@@ -460,11 +462,11 @@ export function GroupDetailScreen({ route, navigation }: any) {
   }
 
   const isManager = appUser
-    ? canManageGroup(appUser.role, user?.uid ?? '', group.leaderId)
+    ? canOn(appUser.role, 'grupo', 'editar', { userId: user?.uid, ownerId: group.leaderId })
     : false;
 
   const canSeeRequests = appUser
-    ? canViewRequests(appUser.role, user?.uid ?? '', group.leaderId)
+    ? canOn(appUser.role, 'grupo', 'editar', { userId: user?.uid, ownerId: group.leaderId })
     : false;
 
   return (
@@ -677,7 +679,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
               <Text style={styles.btnEditText}>Editar grupo</Text>
             </TouchableOpacity>
           )}
-          {appUser?.role === 'administrador' && (
+          {canOn(appUser?.role, 'grupo', 'excluir', { userId: user?.uid, ownerId: group.leaderId }) && (
             <TouchableOpacity
               style={styles.btnDelete}
               onPress={handleGroupDelete}

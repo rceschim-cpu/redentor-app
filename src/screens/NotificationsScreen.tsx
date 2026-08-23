@@ -30,6 +30,7 @@ const TYPE_COLOR: Record<AppNotification['type'], string> = {
   join_request: Colors.archBlue,
   parking: Colors.archYellow,
   general: Colors.textMuted,
+  role_request: Colors.archRose,
 };
 
 export default function NotificationsScreen({ navigation }: any) {

@@ -4,6 +4,7 @@ import { Colors, Spacing, Radius } from '../theme';
 import { Card } from '../components';
 import { useFontScale, FontSizePref, FONT_SCALES, FONT_PREF_LABELS } from '../context/FontScaleContext';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
 
 const SIZE_OPTIONS: { key: FontSizePref; desc: string }[] = [
   { key: 'normal',  desc: 'Tamanho padrão do app' },
@@ -14,7 +15,9 @@ const SIZE_OPTIONS: { key: FontSizePref; desc: string }[] = [
 export default function SettingsScreen({ navigation }: any) {
   const { pref, setPref } = useFontScale();
   const { appUser } = useAuth();
-  const isStaff = appUser?.role === 'administrador' || appUser?.role === 'pastor';
+  const isStaff = can(appUser?.role, 'usuario', 'visualizar');
+  const canSeeMatrix = can(appUser?.role, 'matriz', 'visualizar');
+  const canDecideRoles = can(appUser?.role, 'solicitacao_perfil', 'editar');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -80,6 +83,46 @@ export default function SettingsScreen({ navigation }: any) {
               <View>
                 <Text style={styles.linkLabel}>Banners da Home</Text>
                 <Text style={styles.linkDesc}>Atualizar imagens do carrossel principal</Text>
+              </View>
+            </View>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
+        </Card>
+      )}
+
+      {canDecideRoles && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>PERFIS DE ACESSO</Text>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => navigation.navigate('RoleRequests')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.linkLeft}>
+              <Text style={styles.linkIcon}>📩</Text>
+              <View>
+                <Text style={styles.linkLabel}>Solicitações de Perfil</Text>
+                <Text style={styles.linkDesc}>Aprovar ou recusar pedidos de mudança</Text>
+              </View>
+            </View>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
+        </Card>
+      )}
+
+      {canSeeMatrix && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>PERMISSÕES</Text>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => navigation.navigate('PermissionsMatrix')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.linkLeft}>
+              <Text style={styles.linkIcon}>🔐</Text>
+              <View>
+                <Text style={styles.linkLabel}>Matriz de Permissões</Text>
+                <Text style={styles.linkDesc}>O que cada perfil pode ver e alterar</Text>
               </View>
             </View>
             <Text style={styles.linkArrow}>›</Text>

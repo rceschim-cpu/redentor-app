@@ -1,13 +1,28 @@
 // ─── Roles ────────────────────────────────────────────────────────────────────
-export type UserRole = 'administrador' | 'pastor' | 'lider' | 'lider_ministerio' | 'membro';
+export type UserRole =
+  | 'administrador'
+  | 'pastor'
+  | 'presbitero'
+  | 'coordenador'
+  | 'lider'
+  | 'lider_ministerio'
+  | 'membro';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   administrador:    'Administrador',
   pastor:           'Pastor',
+  presbitero:       'Presbítero',
+  coordenador:      'Coordenador',
   lider:            'Líder de PG',
   lider_ministerio: 'Líder de Ministério',
   membro:           'Membro',
 };
+
+// Ordem canônica — usada nas colunas da matriz de permissões e nos seletores
+export const ROLE_ORDER: UserRole[] = [
+  'administrador', 'pastor', 'lider', 'lider_ministerio',
+  'presbitero', 'coordenador', 'membro',
+];
 
 // ─── Perfil de usuário (Firestore /users/{uid}) ───────────────────────────────
 export interface AppUserProfile {
@@ -27,7 +42,7 @@ export interface AppNotification {
   id: string;
   title: string;
   body: string;
-  type: 'join_request' | 'parking' | 'general';
+  type: 'join_request' | 'parking' | 'general' | 'role_request';
   read: boolean;
   createdAt: string;
   metadata?: {
@@ -35,6 +50,8 @@ export interface AppNotification {
     groupName?: string;
     plate?: string;
     memberName?: string;
+    requestId?: string;
+    requestedRole?: UserRole;
   };
 }
 
@@ -155,7 +172,11 @@ export interface GroupMaterial {
   uploadedBy: string;
   uploaderName: string;
   uploadedAt: string;
+  audience?: MaterialAudience;   // ausente = 'geral' (materiais antigos)
 }
+
+// Público-alvo do material: geral (todos do PG) ou restrito a líderes
+export type MaterialAudience = 'geral' | 'lideres';
 
 // ─── Ministérios ──────────────────────────────────────────────────────────────
 export type MinistryType =
@@ -247,6 +268,86 @@ export interface User {
   email: string;
   role: UserRole;
   memberId?: string;
+}
+
+// ─── Matriz de permissões ─────────────────────────────────────────────────────
+// Alcance de uma ação: T = tudo, G = grupo/área, P = próprio, N = nada
+export type Scope = 'T' | 'G' | 'P' | 'N';
+
+export const SCOPE_LABELS: Record<Scope, string> = {
+  T: 'Tudo',
+  G: 'Grupo',
+  P: 'Próprio',
+  N: 'Nada',
+};
+
+export type PermissionAction = 'criar' | 'visualizar' | 'editar' | 'excluir';
+
+export const ACTION_LABELS: Record<PermissionAction, string> = {
+  criar:      'Criar',
+  visualizar: 'Visualizar',
+  editar:     'Editar',
+  excluir:    'Excluir',
+};
+
+// Itens do app sujeitos a controle de acesso
+export type PermissionResource =
+  | 'membro'
+  | 'grupo'
+  | 'ministerio'
+  | 'escala'
+  | 'evento'
+  | 'crianca'
+  | 'material_geral'
+  | 'material_lideres'
+  | 'banner'
+  | 'usuario'
+  | 'solicitacao_perfil'
+  | 'matriz';
+
+export const RESOURCE_LABELS: Record<PermissionResource, string> = {
+  membro:             'Membro',
+  grupo:              'Pequeno Grupo',
+  ministerio:         'Ministério',
+  escala:             'Escala de Ministério',
+  evento:             'Item do Calendário',
+  crianca:            'Criança (Kids)',
+  material_geral:     'Material de PG — geral',
+  material_lideres:   'Material de PG — líderes',
+  banner:             'Banner da Home',
+  usuario:            'Usuário',
+  solicitacao_perfil: 'Solicitação de Perfil',
+  matriz:             'Matriz de Permissões',
+};
+
+// Ordem de exibição na tela da matriz
+export const RESOURCE_ORDER: PermissionResource[] = [
+  'membro', 'grupo', 'ministerio', 'escala', 'evento', 'crianca',
+  'material_geral', 'material_lideres', 'banner', 'usuario',
+  'solicitacao_perfil', 'matriz',
+];
+
+export type ResourcePermissions = Record<PermissionAction, Scope>;
+export type RolePermissions = Record<PermissionResource, ResourcePermissions>;
+export type PermissionMatrix = Record<UserRole, RolePermissions>;
+
+// ─── Solicitação de mudança de perfil ─────────────────────────────────────────
+export type RoleRequestStatus = 'pendente' | 'aprovado' | 'recusado';
+
+export interface RoleRequest {
+  id: string;
+  uid: string;
+  userName: string;
+  userEmail: string;
+  currentRole: UserRole;
+  requestedRole: UserRole;
+  justification: string;
+  status: RoleRequestStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolvedByName?: string;
+  decisionReason?: string;
 }
 
 // ─── Navigation param lists ───────────────────────────────────────────────────

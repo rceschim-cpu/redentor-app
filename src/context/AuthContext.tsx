@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import { loadMatrix } from '../services/permissionMatrix';
 import { getUserProfile, createUserProfile, updateUserProfile } from '../services/userProfile';
 import { AppUserProfile } from '../types';
 import { registerExpoPushToken } from '../services/notifications';
@@ -64,6 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
       if (u) {
         try {
+          // A matriz precisa estar ativa antes de qualquer tela consultar
+          // permissões, senão a primeira renderização usa o padrão do código
+          await loadMatrix();
           await loadAppUser(u, true);
         } catch (err) {
           console.error('Erro ao carregar perfil do usuário:', err);

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text as RNText,
@@ -19,10 +19,11 @@ import { updateUserProfile } from '../services/userProfile';
 import { getMember, updateMember } from '../services/members';
 import { getGroups } from '../services/groups';
 import { requestToJoin } from '../services/memberships';
+import { createRoleRequest, getMyRoleRequests } from '../services/roleRequests';
 import { maskPhone, maskDate } from '../utils/masks';
 import { showAlert } from '../utils/alert';
 import { MARITAL_OPTIONS, STATUS_OPTIONS, MARITAL_LABEL } from '../constants/memberOptions';
-import { Group, Member, MemberStatus } from '../types';
+import { Group, Member, MemberStatus, RoleRequest, UserRole, ROLE_LABELS, ROLE_ORDER } from '../types';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -47,6 +48,13 @@ export default function ProfileScreen() {
 
   const [member, setMember] = useState<Member | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+
+  // Solicitação de mudança de perfil
+  const [myRequests, setMyRequests] = useState<RoleRequest[]>([]);
+  const [requesting, setRequesting] = useState(false);
+  const [wantedRole, setWantedRole] = useState<UserRole | null>(null);
+  const [justification, setJustification] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   // todos os campos
   const [name, setName] = useState('');
@@ -177,6 +185,52 @@ export default function ProfileScreen() {
         <ActivityIndicator color={Colors.primary} />
       </View>
     );
+  }
+
+
+  const loadMyRequests = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      setMyRequests(await getMyRoleRequests(user.uid));
+    } catch {
+      // silencioso: a solicitação é acessório desta tela
+    }
+  }, [user?.uid]);
+
+  useEffect(() => { loadMyRequests(); }, [loadMyRequests]);
+
+  const pendingRequest = myRequests.find((r) => r.status === 'pendente');
+  const lastResolved = myRequests.find((r) => r.status !== 'pendente');
+
+  async function handleSendRequest() {
+    if (!wantedRole) {
+      showAlert('Escolha um perfil', 'Selecione o perfil que você deseja.');
+      return;
+    }
+    if (!justification.trim()) {
+      showAlert('Justificativa obrigatória', 'Explique por que você precisa desse perfil.');
+      return;
+    }
+    setSendingRequest(true);
+    try {
+      await createRoleRequest({
+        uid: user!.uid,
+        userName: appUser?.name ?? name,
+        userEmail: user?.email ?? '',
+        currentRole: appUser?.role ?? 'membro',
+        requestedRole: wantedRole,
+        justification: justification.trim(),
+      });
+      setRequesting(false);
+      setWantedRole(null);
+      setJustification('');
+      await loadMyRequests();
+      showAlert('Solicitação enviada', 'Um pastor ou administrador vai analisar seu pedido.');
+    } catch (e: any) {
+      showAlert('Não foi possível enviar', e.message);
+    } finally {
+      setSendingRequest(false);
+    }
   }
 
   return (
@@ -391,6 +445,91 @@ export default function ProfileScreen() {
         </Card>
       )}
 
+      {/* ── PERFIL DE ACESSO ── */}
+      {!editMode && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>PERFIL DE ACESSO</Text>
+          <Text style={styles.roleCurrent}>
+            Seu perfil hoje:{' '}
+            <Text style={styles.roleCurrentStrong}>
+              {ROLE_LABELS[appUser?.role ?? 'membro']}
+            </Text>
+          </Text>
+
+          {pendingRequest ? (
+            <View style={styles.reqPending}>
+              <Text style={styles.reqPendingText}>
+                Pedido para {ROLE_LABELS[pendingRequest.requestedRole]} aguardando analise.
+              </Text>
+            </View>
+          ) : requesting ? (
+            <>
+              <Text style={styles.reqLabel}>Perfil desejado</Text>
+              <View style={styles.reqChips}>
+                {ROLE_ORDER.filter((r) => r !== (appUser?.role ?? 'membro')).map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[styles.reqChip, wantedRole === r && styles.reqChipActive]}
+                    onPress={() => setWantedRole(r)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.reqChipText, wantedRole === r && styles.reqChipTextActive]}>
+                      {ROLE_LABELS[r]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.reqLabel}>Justificativa</Text>
+              <TextInput
+                style={styles.reqInput}
+                value={justification}
+                onChangeText={setJustification}
+                placeholder="Conte por que voce precisa desse perfil"
+                placeholderTextColor={Colors.textMuted}
+                multiline
+              />
+
+              <View style={styles.reqActions}>
+                <TouchableOpacity
+                  style={styles.reqGhost}
+                  onPress={() => { setRequesting(false); setWantedRole(null); setJustification(''); }}
+                  disabled={sendingRequest}
+                >
+                  <Text style={styles.reqGhostText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.reqPrimary}
+                  onPress={handleSendRequest}
+                  disabled={sendingRequest}
+                >
+                  {sendingRequest
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.reqPrimaryText}>Enviar pedido</Text>}
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              {lastResolved && (
+                <Text style={styles.reqHistory}>
+                  Ultimo pedido ({ROLE_LABELS[lastResolved.requestedRole]}):{' '}
+                  {lastResolved.status === 'aprovado' ? 'aprovado' : 'recusado'}
+                  {lastResolved.decisionReason ? ' - ' + lastResolved.decisionReason : ''}
+                </Text>
+              )}
+              <TouchableOpacity
+                style={styles.reqOpen}
+                onPress={() => setRequesting(true)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.reqOpenText}>Solicitar mudanca de perfil</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </Card>
+      )}
+
       {/* ── SAIR ── */}
       {!editMode && (
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
@@ -404,6 +543,48 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  roleCurrent: { fontSize: 14, color: Colors.textSecondary, marginBottom: 14 },
+  roleCurrentStrong: { fontWeight: '700', color: Colors.textPrimary },
+  reqLabel: {
+    fontSize: 12, fontWeight: '700', color: Colors.textSecondary,
+    letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8, marginTop: 4,
+  },
+  reqChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  reqChip: {
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: Radius.full,
+    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.surface,
+  },
+  reqChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  reqChipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  reqChipTextActive: { color: '#fff' },
+  reqInput: {
+    borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md,
+    padding: 12, minHeight: 76, fontSize: 14,
+    color: Colors.textPrimary, textAlignVertical: 'top',
+  },
+  reqActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  reqGhost: {
+    flex: 1, minHeight: 46, borderRadius: Radius.lg, borderWidth: 1.5,
+    borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
+  },
+  reqGhostText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  reqPrimary: {
+    flex: 1.3, minHeight: 46, borderRadius: Radius.lg,
+    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  reqPrimaryText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  reqOpen: {
+    minHeight: 46, borderRadius: Radius.lg, borderWidth: 1.5,
+    borderColor: Colors.primary, borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  reqOpenText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  reqPending: {
+    backgroundColor: '#FFF8EC', borderWidth: 1, borderColor: '#F0DC9A',
+    borderRadius: Radius.md, padding: 14,
+  },
+  reqPendingText: { fontSize: 14, fontWeight: '600', color: '#7A6010', lineHeight: 20 },
+  reqHistory: { fontSize: 12, color: Colors.textMuted, marginBottom: 12, lineHeight: 17 },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

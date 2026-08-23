@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { uploadToCloudinary } from './cloudinary';
-import { GroupMaterial } from '../types';
+import { GroupMaterial, MaterialAudience } from '../types';
 
 const COL = 'group_materials';
 
@@ -27,7 +27,8 @@ export async function uploadMaterial(
   title: string,
   description: string,
   uploadedBy: string,
-  uploaderName: string
+  uploaderName: string,
+  audience: MaterialAudience = 'geral'
 ): Promise<GroupMaterial> {
   // Upload via Cloudinary (gratuito, sem Firebase Storage)
   const { url: fileURL } = await uploadToCloudinary(file);
@@ -43,6 +44,7 @@ export async function uploadMaterial(
     uploadedBy,
     uploaderName,
     uploadedAt: new Date().toISOString(),
+    audience,
   };
 
   const docRef = await addDoc(collection(db, COL), data);
@@ -53,4 +55,16 @@ export async function deleteMaterial(id: string, _fileURL: string): Promise<void
   // Remove apenas o registro do Firestore; o arquivo no Cloudinary fica
   // (deleção pelo cliente exigiria API secret — não expor no app)
   await deleteDoc(doc(db, COL, id));
+}
+
+/** Materiais antigos não têm o campo audience — contam como 'geral'. */
+export function materialAudience(m: GroupMaterial): MaterialAudience {
+  return m.audience ?? 'geral';
+}
+
+export function filterByAudience(
+  materials: GroupMaterial[],
+  audience: MaterialAudience
+): GroupMaterial[] {
+  return materials.filter((m) => materialAudience(m) === audience);
 }

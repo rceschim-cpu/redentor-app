@@ -1,3 +1,5 @@
+import { UserRole } from '../types';
+
 export const Colors = {
   // Brand — Comunidade do Redentor (Proposta "Cal e Sombra")
   primary: '#4A7AB5',       // Azul vitral — cor de acento principal
@@ -84,3 +86,15 @@ export const AVATAR_COLORS = [
 
 export const getAvatarColor = (index: number) =>
   AVATAR_COLORS[index % AVATAR_COLORS.length];
+
+// Cor do badge de cada perfil de acesso — fonte única, usada na tela de
+// Usuários e no detalhe do membro
+export const ROLE_BADGE: Record<UserRole, { bg: string; fg: string }> = {
+  administrador:    { bg: '#EDE9F7', fg: '#7B5EA7' },
+  pastor:           { bg: '#E8F2FA', fg: '#2D6EA0' },
+  presbitero:       { bg: '#F3E9EC', fg: '#9B5C6B' },
+  coordenador:      { bg: '#EAF3E8', fg: '#4F7A45' },
+  lider:            { bg: '#E8F4EA', fg: '#3B7A46' },
+  lider_ministerio: { bg: '#FBF3DC', fg: '#8A7020' },
+  membro:           { bg: Colors.borderLight, fg: Colors.textSecondary },
+};

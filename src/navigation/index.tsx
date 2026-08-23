@@ -5,6 +5,7 @@ import { View, ActivityIndicator, TouchableOpacity, Platform } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -21,6 +22,8 @@ import GroupMemberRequestsScreen from '../screens/GroupMemberRequestsScreen';
 import GroupMaterialsScreen from '../screens/GroupMaterialsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import BannersScreen from '../screens/BannersScreen';
+import PermissionsMatrixScreen from '../screens/PermissionsMatrixScreen';
+import RoleRequestsScreen from '../screens/RoleRequestsScreen';
 import BibleScreen from '../screens/BibleScreen';
 import {
   MembersListScreen,
@@ -93,6 +96,8 @@ function HomeStackScreen() {
       <HomeStack.Screen name="Settings"      component={SettingsScreen}     options={{ title: 'Configurações' }} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificações' }} />
       <HomeStack.Screen name="Banners"       component={BannersScreen}      options={{ title: 'Banners da Home' }} />
+      <HomeStack.Screen name="PermissionsMatrix" component={PermissionsMatrixScreen} options={{ title: 'Matriz de Permissões' }} />
+      <HomeStack.Screen name="RoleRequests"  component={RoleRequestsScreen} options={{ title: 'Solicitações de Perfil' }} />
       <HomeStack.Screen name="Bible"         component={BibleScreen}        options={{ title: 'Bíblia' }} />
       <HomeStack.Screen name="KidsList"      component={KidsListScreen}     options={{ title: 'Redentor Kids' }} />
       <HomeStack.Screen name="KidsDetail"    component={KidsDetailScreen}   options={{ title: '' }} />
@@ -170,6 +175,9 @@ function CelebrationStackScreen() {
 
 // ─── Tab Navigator principal ───────────────────────────────────────────────────
 function MainTabs() {
+  const { appUser } = useAuth();
+  const canSeeMembers = can(appUser?.role, 'membro', 'visualizar');
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -202,7 +210,9 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="HomeTab"        component={HomeStackScreen}        options={{ title: 'Início' }} />
-      <Tab.Screen name="MembersTab"     component={MembersStackScreen}     options={{ title: 'Membros' }} />
+      {canSeeMembers && (
+        <Tab.Screen name="MembersTab"   component={MembersStackScreen}     options={{ title: 'Membros' }} />
+      )}
       <Tab.Screen name="SmallGroupsTab" component={GroupsStackScreen}      options={{ title: 'Grupos' }} />
       <Tab.Screen name="CelebrationTab" component={CelebrationStackScreen} options={{ title: '160 Anos' }} />
     </Tab.Navigator>

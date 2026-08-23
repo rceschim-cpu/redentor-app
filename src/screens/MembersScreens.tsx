@@ -12,12 +12,13 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Radius } from '../theme';
+import { Colors, Spacing, Radius, ROLE_BADGE } from '../theme';
 import { Avatar, StatusBadge, Card, DetailRow, PrimaryButton } from '../components';
-import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS, FamilyLink, Child } from '../types';
+import { Member, MemberStatus, AppUserProfile, UserRole, ROLE_LABELS, FamilyLink, Child, ROLE_ORDER } from '../types';
 import { getMembers, getMember, addMember, updateMember, deleteMember } from '../services/members';
 import { getGroup } from '../services/groups';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
 import { maskPhone, maskDate } from '../utils/masks';
 import { getChildrenByGuardianMember } from '../services/kids';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,7 +33,7 @@ export function MembersListScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'todos'>('todos');
-  const canAddMember = appUser?.role === 'administrador' || appUser?.role === 'pastor';
+  const canAddMember = can(appUser?.role, 'membro', 'criar');
 
   useFocusEffect(
     useCallback(() => {
@@ -129,8 +130,8 @@ export function MemberDetailScreen({ route, navigation }: any) {
   const [member, setMember] = useState<Member | null>(null);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const canEdit = appUser?.role === 'administrador' || appUser?.role === 'pastor';
-  const canDelete = appUser?.role === 'administrador';
+  const canEdit = can(appUser?.role, 'membro', 'editar');
+  const canDelete = can(appUser?.role, 'membro', 'excluir');
   const [linkedUser, setLinkedUser] = useState<AppUserProfile | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
   const [linkedChildren, setLinkedChildren] = useState<Child[]>([]);
@@ -270,14 +271,8 @@ export function MemberDetailScreen({ route, navigation }: any) {
             <View style={{ marginTop: 10 }}>
               <Text style={[styles.cardTitle, { marginBottom: 8 }]}>PERFIL DE ACESSO</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {(['administrador', 'pastor', 'lider', 'membro'] as UserRole[]).map((role) => {
-                  const ROLE_COLORS: Record<UserRole, { bg: string; fg: string }> = {
-                    administrador: { bg: '#EDE9F7', fg: '#7B5EA7' },
-                    pastor:        { bg: '#E8F2FA', fg: '#2D6EA0' },
-                    lider:         { bg: '#E8F4EA', fg: '#3B7A46' },
-                    membro:        { bg: Colors.background, fg: Colors.textSecondary },
-                  };
-                  const rc = ROLE_COLORS[role];
+                {ROLE_ORDER.map((role) => {
+                  const rc = ROLE_BADGE[role];
                   const isActive = linkedUser.role === role;
                   return (
                     <TouchableOpacity

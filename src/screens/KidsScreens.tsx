@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar, Card, SectionTitle } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
 import { showAlert, showConfirm } from '../utils/alert';
 import { maskPhone, maskDate } from '../utils/masks';
 import {
@@ -72,7 +73,7 @@ function openWhatsApp(phone: string, childName: string) {
 
 export function KidsListScreen({ navigation }: any) {
   const { appUser } = useAuth();
-  const isStaff = appUser?.role === 'administrador' || appUser?.role === 'pastor' || appUser?.role === 'lider';
+  const isStaff = can(appUser?.role, 'crianca', 'editar');
   const [module, setModule] = useState<KidsModule>('kids');
   const [ageFilter, setAgeFilter] = useState<KidsAgeGroup | 'todos'>('todos');
   const [search, setSearch] = useState('');
@@ -216,7 +217,7 @@ export function KidsListScreen({ navigation }: any) {
 export function KidsDetailScreen({ navigation, route }: any) {
   const { childId } = route.params as { childId: string };
   const { appUser } = useAuth();
-  const isStaff = appUser?.role === 'administrador' || appUser?.role === 'pastor' || appUser?.role === 'lider';
+  const isStaff = can(appUser?.role, 'crianca', 'editar');
   const [child, setChild] = useState<Child | null>(null);
   const [history, setHistory] = useState<ChildAttendance[]>([]);
   const [loading, setLoading] = useState(true);

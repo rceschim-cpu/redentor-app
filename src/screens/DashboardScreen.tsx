@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
 import { Avatar } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { can } from '../services/permissions';
+import { PermissionResource } from '../types';
 import { useBanners } from '../context/BannersContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,14 +34,18 @@ const BANNERS = [
 // ─── Módulos ──────────────────────────────────────────────────────────────────
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-const MODULES: { icon: IoniconName; label: string; screen: string | null }[] = [
-  { icon: 'person-outline',        label: 'Membros',      screen: 'MembersTab' },
-  { icon: 'people-outline',        label: 'Peq. Grupos',  screen: 'SmallGroupsTab' },
-  { icon: 'calendar-outline',      label: 'Eventos',      screen: 'Events' },
+// 'resource' ausente = módulo aberto a todos os perfis
+const MODULES: {
+  icon: IoniconName; label: string; screen: string | null;
+  resource?: PermissionResource;
+}[] = [
+  { icon: 'person-outline',        label: 'Membros',      screen: 'MembersTab',      resource: 'membro' },
+  { icon: 'people-outline',        label: 'Peq. Grupos',  screen: 'SmallGroupsTab',  resource: 'grupo' },
+  { icon: 'calendar-outline',      label: 'Eventos',      screen: 'Events',          resource: 'evento' },
   { icon: 'play-circle-outline',   label: 'Cultos',       screen: 'Cultos' },
   { icon: 'car-outline',           label: 'Estacion.',    screen: 'Parking' },
-  { icon: 'happy-outline',         label: 'Kids',         screen: 'KidsList' },
-  { icon: 'hand-right-outline',    label: 'Ministérios',  screen: 'Ministries' },
+  { icon: 'happy-outline',         label: 'Kids',         screen: 'KidsList',        resource: 'crianca' },
+  { icon: 'hand-right-outline',    label: 'Ministérios',  screen: 'Ministries',      resource: 'ministerio' },
   { icon: 'settings-outline',      label: 'Config.',      screen: 'Settings' },
 ];
 
@@ -104,9 +110,11 @@ export default function DashboardScreen({ navigation }: any) {
     return () => clearInterval(timer);
   }, []);
 
-  const filteredModules = MODULES.filter((m) =>
-    search === '' || m.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredModules = MODULES.filter((m) => {
+    const allowed = !m.resource || can(appUser?.role, m.resource, 'visualizar');
+    const matches = search === '' || m.label.toLowerCase().includes(search.toLowerCase());
+    return allowed && matches;
+  });
 
   return (
     <View style={styles.container}>
