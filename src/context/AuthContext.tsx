@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   appUser: AppUserProfile | null;
   loading: boolean;
+  profilePersisted: boolean;
   isNewUser: boolean;
   refreshAppUser: () => Promise<void>;
 }
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   appUser: null,
   loading: true,
+  profilePersisted: true,
   isNewUser: false,
   refreshAppUser: async () => {},
 });
@@ -28,6 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   // true APENAS quando o perfil foi criado nesta sessão (primeiro login real)
   const [isNewUser, setIsNewUser] = useState(false);
+  // false quando o perfil existe apenas em memória por falha de gravação
+  const [profilePersisted, setProfilePersisted] = useState(true);
 
   const loadAppUser = async (firebaseUser: User, freshLogin = false) => {
     let profile = await getUserProfile(firebaseUser.uid);
@@ -63,25 +67,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) {
-        try {
-          // A matriz precisa estar ativa antes de qualquer tela consultar
-          // permissões, senão a primeira renderização usa o padrão do código
-          await loadMatrix();
-          await loadAppUser(u, true);
-        } catch (err) {
-          console.error('Erro ao carregar perfil do usuário:', err);
-          // Se falhou, cria perfil mínimo para o usuário não ficar preso
-          setAppUser({
-            uid: u.uid,
-            name: u.displayName || u.email?.split('@')[0] || 'Usuário',
-            email: u.email ?? '',
-            role: 'membro',
-          });
-        }
-      } else {
+      if (!u) {
         setAppUser(null);
+        setProfilePersisted(true);
+        setLoading(false);
+        return;
       }
+
+      // A matriz precisa estar ativa antes de qualquer tela consultar
+      // permissões, senão a primeira renderização usa o padrão do código
+      await loadMatrix().catch(() => {});
+
+      // O token de autenticação pode ainda não ter chegado ao Firestore quando
+      // este callback dispara, e a primeira gravação sai sem credencial. Sem
+      // repetir a tentativa, o perfil nunca é criado e a pessoa fica só em
+      // memória — invisível em /users e, por consequência, em Membros.
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await loadAppUser(u, true);
+          setProfilePersisted(true);
+          setLoading(false);
+          return;
+        } catch (err) {
+          lastError = err;
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+
+      // Esgotou. Mantém a pessoa navegando, mas marca que o perfil NÃO foi
+      // gravado — o app avisa em vez de fingir que deu certo.
+      console.error('Perfil do usuário não pôde ser gravado:', lastError);
+      setProfilePersisted(false);
+      setAppUser({
+        uid: u.uid,
+        name: u.displayName || u.email?.split('@')[0] || 'Usuário',
+        email: u.email ?? '',
+        role: 'membro',
+      });
       setLoading(false);
     });
     return unsubscribe;
@@ -95,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, appUser, loading, isNewUser, refreshAppUser }}>
+    <AuthContext.Provider value={{ user, appUser, loading, isNewUser, profilePersisted, refreshAppUser }}>
       {children}
     </AuthContext.Provider>
   );

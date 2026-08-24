@@ -75,7 +75,7 @@ function GeometricBg() {
 
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 export default function DashboardScreen({ navigation }: any) {
-  const { user, appUser } = useAuth();
+  const { user, appUser, profilePersisted } = useAuth();
   const { bannerImages } = useBanners();
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
@@ -119,6 +119,15 @@ export default function DashboardScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <GeometricBg />
+
+      {!profilePersisted && (
+        <View style={styles.profileWarn}>
+          <Text style={styles.profileWarnText}>
+            Seu cadastro não pôde ser salvo. Você aparece no app, mas ainda não
+            na lista da comunidade. Feche e abra o app novamente.
+          </Text>
+        </View>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
 
@@ -295,6 +304,16 @@ export default function DashboardScreen({ navigation }: any) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  profileWarn: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    backgroundColor: '#FDECEA',
+    borderWidth: 1,
+    borderColor: '#F0B4AC',
+    borderRadius: Radius.md,
+    padding: 14,
+  },
+  profileWarnText: { fontSize: 13, color: '#8C2F22', lineHeight: 19 },
   container: { flex: 1, backgroundColor: BG },
 
   // Header com logo | saudação | avatar
