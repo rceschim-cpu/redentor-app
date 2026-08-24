@@ -13,6 +13,8 @@ import { Colors, Spacing, Radius, ROLE_BADGE } from '../theme';
 import { Avatar } from '../components';
 import { AppUserProfile, UserRole, ROLE_LABELS, ROLE_ORDER } from '../types';
 import { getAllUsers, updateUserProfile } from '../services/userProfile';
+import { backfillMembersFromUsers } from '../services/backfill';
+import { showAlert, showConfirm } from '../utils/alert';
 
 const ROLES: UserRole[] = ROLE_ORDER;
 const ROLE_STYLE = ROLE_BADGE;
@@ -22,6 +24,7 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(true);
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null); // uid sendo salvo
+  const [backfilling, setBackfilling] = useState(false);
 
   useEffect(() => {
     getAllUsers()
@@ -36,6 +39,39 @@ export default function UsersScreen() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Usuários que se cadastraram mas nunca completaram o perfil não têm
+  // registro em /members e por isso não aparecem na tela de Membros.
+  const missingMembers = users.filter((u) => !u.memberId).length;
+
+  const handleBackfill = () => {
+    showConfirm(
+      'Criar registros de membro',
+      `${missingMembers} ${missingMembers === 1 ? 'pessoa' : 'pessoas'} sem registro. ` +
+      'Vão entrar com nome e e-mail; telefone e nascimento ficam em branco ' +
+      'até cada um preencher no próprio perfil. Continuar?',
+      async () => {
+        setBackfilling(true);
+        try {
+          const r = await backfillMembersFromUsers();
+          setUsers(await getAllUsers());
+          const parts = [];
+          if (r.created) parts.push(`${r.created} criados`);
+          if (r.linked) parts.push(`${r.linked} vinculados a cadastros existentes`);
+          if (r.failed) parts.push(`${r.failed} falharam`);
+          showAlert(
+            'Pronto',
+            parts.length ? parts.join(', ') + '.' : 'Nada a fazer — todos já tinham registro.'
+          );
+        } catch (e) {
+          showAlert('Erro', 'Não foi possível criar os registros.');
+        } finally {
+          setBackfilling(false);
+        }
+      },
+      'Criar'
+    );
+  };
 
   const handleRoleChange = async (profile: AppUserProfile, role: UserRole) => {
     if (role === profile.role) {
@@ -77,9 +113,33 @@ export default function UsersScreen() {
       keyExtractor={(u) => u.uid}
       contentContainerStyle={styles.list}
       ListHeaderComponent={
-        <Text style={styles.hint}>
-          Toque em um usuário para alterar o perfil de acesso.
-        </Text>
+        <>
+          <Text style={styles.hint}>
+            Toque em um usuário para alterar o perfil de acesso.
+          </Text>
+
+          {missingMembers > 0 && (
+            <View style={styles.backfillCard}>
+              <Text style={styles.backfillTitle}>
+                {missingMembers} sem registro de membro
+              </Text>
+              <Text style={styles.backfillDesc}>
+                Essas pessoas criaram conta mas não concluíram o cadastro, então
+                não aparecem na tela de Membros.
+              </Text>
+              <TouchableOpacity
+                style={styles.backfillBtn}
+                onPress={handleBackfill}
+                disabled={backfilling}
+                activeOpacity={0.8}
+              >
+                {backfilling
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.backfillBtnText}>Criar registros agora</Text>}
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
       }
       ListEmptyComponent={
         <Text style={styles.empty}>Nenhum usuário encontrado.</Text>
@@ -151,6 +211,26 @@ export default function UsersScreen() {
 }
 
 const styles = StyleSheet.create({
+  backfillCard: {
+    backgroundColor: '#FFF8EC',
+    borderWidth: 1,
+    borderColor: '#F0DC9A',
+    borderRadius: Radius.lg,
+    padding: 16,
+    marginBottom: 14,
+    gap: 10,
+  },
+  backfillTitle: { fontSize: 15, fontWeight: '700', color: '#7A6010' },
+  backfillDesc: { fontSize: 13, color: '#7A6010', lineHeight: 19, opacity: 0.85 },
+  backfillBtn: {
+    minHeight: 46,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  backfillBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.md, gap: 8 },
