@@ -225,7 +225,12 @@ function AppNavigator() {
 }
 
 export default function RootNavigator() {
-  const { user, appUser, loading, isNewUser } = useAuth();
+  const { user, appUser, loading } = useAuth();
+
+  // Decidido por estado persistido, nunca por flag de sessão: quem se cadastrava
+  // e fechava o app antes de preencher o formulário nunca mais o via, e por isso
+  // nunca ganhava registro em /members — ficava invisível na tela de Membros.
+  const needsProfile = !!user && !appUser?.memberId && !appUser?.profileComplete;
 
   if (loading) {
     return (
@@ -239,7 +244,7 @@ export default function RootNavigator() {
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <RootStack.Screen name="Login" component={LoginScreen} />
-      ) : isNewUser ? (
+      ) : needsProfile ? (
         <RootStack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
       ) : (
         <RootStack.Screen name="Main" component={AppNavigator} />

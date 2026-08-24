@@ -179,14 +179,6 @@ export default function ProfileScreen() {
     }
   };
 
-  if (loadingData) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.primary} />
-      </View>
-    );
-  }
-
 
   const loadMyRequests = useCallback(async () => {
     if (!user?.uid) return;
@@ -198,6 +190,16 @@ export default function ProfileScreen() {
   }, [user?.uid]);
 
   useEffect(() => { loadMyRequests(); }, [loadMyRequests]);
+
+  if (loadingData) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+
 
   const pendingRequest = myRequests.find((r) => r.status === 'pendente');
   const lastResolved = myRequests.find((r) => r.status !== 'pendente');

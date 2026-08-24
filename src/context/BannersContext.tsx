@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getAllBanners } from '../services/banners';
+import { useAuth } from './AuthContext';
 
 interface BannersContextValue {
   bannerImages: Record<string, string | undefined>;
@@ -12,6 +13,7 @@ const BannersContext = createContext<BannersContextValue>({
 });
 
 export function BannersProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [bannerImages, setBannerImages] = useState<Record<string, string | undefined>>({});
 
   const refreshBanners = useCallback(async () => {
@@ -27,8 +29,16 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Carrega na inicialização
-  useEffect(() => { refreshBanners(); }, [refreshBanners]);
+  // A coleção /banners exige autenticação. Carregar só na montagem falharia
+  // silenciosamente no boot, quando o login ainda não terminou — os banners
+  // só apareciam depois de um F5. Refaz a busca a cada mudança de sessão.
+  useEffect(() => {
+    if (!user) {
+      setBannerImages({});
+      return;
+    }
+    refreshBanners();
+  }, [user?.uid, refreshBanners]);
 
   return (
     <BannersContext.Provider value={{ bannerImages, refreshBanners }}>
