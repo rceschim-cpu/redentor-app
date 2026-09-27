@@ -17,7 +17,8 @@ export default function SettingsScreen({ navigation }: any) {
   const { appUser } = useAuth();
   const isStaff = can(appUser?.role, 'usuario', 'visualizar');
   const canSeeMatrix = can(appUser?.role, 'matriz', 'visualizar');
-  const canDecideRoles = can(appUser?.role, 'solicitacao_perfil', 'editar');
+  const canDecideRoles  = can(appUser?.role, 'solicitacao_perfil', 'editar');
+  const canDecideGroups = can(appUser?.role, 'solicitacao_grupo', 'editar');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -90,9 +91,10 @@ export default function SettingsScreen({ navigation }: any) {
         </Card>
       )}
 
-      {canDecideRoles && (
+      {(canDecideRoles || canDecideGroups) && (
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>PERFIS DE ACESSO</Text>
+          <Text style={styles.sectionTitle}>APROVAÇÕES</Text>
+          {canDecideRoles && (
           <TouchableOpacity
             style={styles.linkRow}
             onPress={() => navigation.navigate('RoleRequests')}
@@ -107,6 +109,24 @@ export default function SettingsScreen({ navigation }: any) {
             </View>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
+          )}
+
+          {canDecideGroups && (
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('GroupRequests')}
+              activeOpacity={0.75}
+            >
+              <View style={styles.linkLeft}>
+                <Text style={styles.linkIcon}>🏘️</Text>
+                <View>
+                  <Text style={styles.linkLabel}>Solicitações de Grupo</Text>
+                  <Text style={styles.linkDesc}>Aprovar criação de novos pequenos grupos</Text>
+                </View>
+              </View>
+              <Text style={styles.linkArrow}>›</Text>
+            </TouchableOpacity>
+          )}
         </Card>
       )}
 

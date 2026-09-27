@@ -42,7 +42,7 @@ export interface AppNotification {
   id: string;
   title: string;
   body: string;
-  type: 'join_request' | 'parking' | 'general' | 'role_request';
+  type: 'join_request' | 'parking' | 'general' | 'role_request' | 'group_request';
   read: boolean;
   createdAt: string;
   metadata?: {
@@ -303,6 +303,7 @@ export type PermissionResource =
   | 'banner'
   | 'usuario'
   | 'solicitacao_perfil'
+  | 'solicitacao_grupo'
   | 'matriz';
 
 export const RESOURCE_LABELS: Record<PermissionResource, string> = {
@@ -317,6 +318,7 @@ export const RESOURCE_LABELS: Record<PermissionResource, string> = {
   banner:             'Banner da Home',
   usuario:            'Usuário',
   solicitacao_perfil: 'Solicitação de Perfil',
+  solicitacao_grupo:  'Solicitação de Grupo',
   matriz:             'Matriz de Permissões',
 };
 
@@ -324,7 +326,7 @@ export const RESOURCE_LABELS: Record<PermissionResource, string> = {
 export const RESOURCE_ORDER: PermissionResource[] = [
   'membro', 'grupo', 'ministerio', 'escala', 'evento', 'crianca',
   'material_geral', 'material_lideres', 'banner', 'usuario',
-  'solicitacao_perfil', 'matriz',
+  'solicitacao_perfil', 'solicitacao_grupo', 'matriz',
 ];
 
 export type ResourcePermissions = Record<PermissionAction, Scope>;
@@ -348,6 +350,37 @@ export interface RoleRequest {
   resolvedBy?: string;
   resolvedByName?: string;
   decisionReason?: string;
+}
+
+// ─── Solicitação de criação de pequeno grupo ──────────────────────────────────
+export type GroupRequestStatus = 'pendente' | 'aprovado' | 'recusado';
+
+// O que a pessoa preencheu no formulário; vira um Group de verdade na aprovação
+export interface ProposedGroup {
+  name: string;
+  icon?: string;
+  meetingDay?: string;
+  meetingTime?: string;
+  location?: string;
+  neighborhood?: string;
+  status: 'ativo' | 'em_formacao';
+  recurrence?: 'semanal' | 'quinzenal' | 'mensal';
+}
+
+export interface GroupRequest {
+  id: string;
+  uid: string;              // quem pediu — vira líder do grupo se aprovado
+  userName: string;
+  userEmail: string;
+  group: ProposedGroup;
+  justification?: string;
+  status: GroupRequestStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolvedByName?: string;
+  decisionReason?: string;
+  createdGroupId?: string;  // preenchido na aprovação
 }
 
 // ─── Navigation param lists ───────────────────────────────────────────────────

@@ -12,8 +12,11 @@ import {
 import { Colors, Spacing, Radius } from '../theme';
 import { PrimaryButton } from '../components';
 import { createGroup, updateGroup } from '../services/groups';
+import { createGroupRequest } from '../services/groupRequests';
+import { can } from '../services/permissions';
+import { showAlert } from '../utils/alert';
 import { useAuth } from '../context/AuthContext';
-import { Group } from '../types';
+import { Group, ProposedGroup } from '../types';
 
 const ICONS = ['🏠', '❤️', '⚡', '💍', '🌿', '📖', '🕊️', '🙏', '🌟', '👨‍👩‍👧'];
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -38,7 +41,12 @@ export default function AddGroupScreen({ navigation, route }: any) {
   const [neighborhood, setNeighborhood] = useState(editing?.neighborhood ?? '');
   const [status, setStatus] = useState<'ativo' | 'em_formacao'>(editing?.status ?? 'ativo');
   const [recurrence, setRecurrence] = useState<'semanal' | 'quinzenal' | 'mensal' | ''>(editing?.recurrence ?? '');
+  const [justification, setJustification] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Quem não pode criar direto envia um pedido para os pastores aprovarem
+  const createsDirectly = can(appUser?.role, 'grupo', 'criar');
+  const needsApproval = !editing && !createsDirectly;
 
   const handleSave = async () => {
     if (saving) return;
@@ -62,15 +70,29 @@ export default function AddGroupScreen({ navigation, route }: any) {
       };
       if (editing) {
         await updateGroup(editing.id, data);
-      } else {
+        navigation.goBack();
+      } else if (createsDirectly) {
         await createGroup(
           { ...data, leaderId: user.uid, leaderName: appUser.name },
           user.uid
         );
+        navigation.goBack();
+      } else {
+        await createGroupRequest({
+          uid: user.uid,
+          userName: appUser.name,
+          userEmail: appUser.email ?? user.email ?? '',
+          group: data as ProposedGroup,
+          justification,
+        });
+        navigation.goBack();
+        showAlert(
+          'Solicitação enviada',
+          'Um pastor vai analisar seu pedido. Quando for aprovado, o grupo aparece na lista e você passa a ser o líder dele.'
+        );
       }
-      navigation.goBack();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível salvar o grupo. Tente novamente.');
+    } catch (e: any) {
+      showAlert('Erro', e?.message ?? 'Não foi possível salvar o grupo. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -78,6 +100,15 @@ export default function AddGroupScreen({ navigation, route }: any) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {needsApproval && (
+        <View style={styles.approvalNote}>
+          <Text style={styles.approvalNoteText}>
+            Seu pedido vai para aprovação de um pastor. Assim que for aprovado,
+            o grupo é criado e você se torna o líder dele.
+          </Text>
+        </View>
+      )}
+
       {/* Nome */}
       <View style={styles.field}>
         <Text style={styles.label}>NOME DO GRUPO</Text>
@@ -197,7 +228,32 @@ export default function AddGroupScreen({ navigation, route }: any) {
         </View>
       </View>
 
-      <PrimaryButton label={saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar Grupo'} onPress={handleSave} />
+      {needsApproval && (
+        <View style={styles.field}>
+          <Text style={styles.label}>POR QUE ESTE GRUPO?</Text>
+          <TextInput
+            style={[styles.input, styles.inputMultiline]}
+            value={justification}
+            onChangeText={setJustification}
+            placeholder="Ajuda o pastor a entender seu pedido (opcional)"
+            placeholderTextColor={Colors.textMuted}
+            multiline
+          />
+        </View>
+      )}
+
+      <PrimaryButton
+        label={
+          saving
+            ? 'Salvando...'
+            : editing
+              ? 'Salvar alterações'
+              : needsApproval
+                ? 'Enviar para aprovação'
+                : 'Criar Grupo'
+        }
+        onPress={handleSave}
+      />
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
         <Text style={styles.cancelText}>Cancelar</Text>
       </TouchableOpacity>
@@ -207,6 +263,16 @@ export default function AddGroupScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  approvalNote: {
+    backgroundColor: '#EBF1FA',
+    borderWidth: 1,
+    borderColor: '#BFD4EC',
+    borderRadius: Radius.md,
+    padding: 14,
+    marginBottom: Spacing.lg,
+  },
+  approvalNoteText: { fontSize: 13, color: '#2D5580', lineHeight: 19 },
+  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg, gap: 18 },
   field: { gap: 8 },

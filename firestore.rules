@@ -97,5 +97,26 @@ service cloud.firestore {
       allow update: if isStaff();
       allow delete: if isAdmin();
     }
+
+    // ── Solicitações de criação de pequeno grupo ──────────────────────────
+    match /group_requests/{id} {
+      // Cada um lê as próprias; pastor e administrador leem todas
+      allow read: if request.auth != null
+                  && (resource.data.uid == request.auth.uid || isStaff());
+
+      // Só dá para abrir pedido em nome próprio, e sempre como pendente
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'pendente';
+
+      // Aprovar ou recusar é exclusivo de pastor e administrador
+      allow update: if isStaff();
+
+      // Quem pediu pode cancelar enquanto está pendente
+      allow delete: if isAdmin()
+                    || (request.auth != null
+                        && resource.data.uid == request.auth.uid
+                        && resource.data.status == 'pendente');
+    }
   }
 }

@@ -24,6 +24,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import BannersScreen from '../screens/BannersScreen';
 import PermissionsMatrixScreen from '../screens/PermissionsMatrixScreen';
 import RoleRequestsScreen from '../screens/RoleRequestsScreen';
+import GroupRequestsScreen from '../screens/GroupRequestsScreen';
 import BibleScreen from '../screens/BibleScreen';
 import {
   MembersListScreen,
@@ -98,6 +99,7 @@ function HomeStackScreen() {
       <HomeStack.Screen name="Banners"       component={BannersScreen}      options={{ title: 'Banners da Home' }} />
       <HomeStack.Screen name="PermissionsMatrix" component={PermissionsMatrixScreen} options={{ title: 'Matriz de Permissões' }} />
       <HomeStack.Screen name="RoleRequests"  component={RoleRequestsScreen} options={{ title: 'Solicitações de Perfil' }} />
+      <HomeStack.Screen name="GroupRequests" component={GroupRequestsScreen} options={{ title: 'Solicitações de Grupo' }} />
       <HomeStack.Screen name="Bible"         component={BibleScreen}        options={{ title: 'Bíblia' }} />
       <HomeStack.Screen name="KidsList"      component={KidsListScreen}     options={{ title: 'Redentor Kids' }} />
       <HomeStack.Screen name="KidsDetail"    component={KidsDetailScreen}   options={{ title: '' }} />

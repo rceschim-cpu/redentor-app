@@ -69,7 +69,9 @@ export function GroupsListScreen({ navigation }: any) {
   const [pendingTitle, setPendingTitle] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  const canCreate = can(appUser?.role, 'grupo', 'criar');
+  // Todo mundo vê o botão: quem não cria direto cai no fluxo de solicitação
+  const canCreate = can(appUser?.role, 'grupo', 'criar')
+    || can(appUser?.role, 'solicitacao_grupo', 'criar');
   const canUploadMaterials = can(appUser?.role, 'material_geral', 'criar');
 
   useFocusEffect(

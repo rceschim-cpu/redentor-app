@@ -40,6 +40,7 @@ const ALL_T: RolePermissions = {
   banner:             r('T', 'T', 'T', 'T'),
   usuario:            r('T', 'T', 'T', 'T'),
   solicitacao_perfil: r('T', 'T', 'T', 'T'),
+  solicitacao_grupo:  r('T', 'T', 'T', 'T'),
   matriz:             r('N', 'T', 'T', 'N'),
 };
 
@@ -60,6 +61,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('T', 'T', 'T', 'T'),
     usuario:            r('N', 'T', 'T', 'N'),
     solicitacao_perfil: r('T', 'T', 'T', 'N'),
+    solicitacao_grupo:  r('T', 'T', 'T', 'N'),
     matriz:             r('N', 'T', 'N', 'N'),
   },
 
@@ -76,6 +78,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('N', 'T', 'N', 'N'),
     usuario:            r('N', 'N', 'N', 'N'),
     solicitacao_perfil: r('T', 'P', 'N', 'N'),
+    solicitacao_grupo:  r('T', 'P', 'N', 'P'),
     matriz:             r('N', 'N', 'N', 'N'),
   },
 
@@ -92,6 +95,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('N', 'T', 'N', 'N'),
     usuario:            r('N', 'N', 'N', 'N'),
     solicitacao_perfil: r('T', 'P', 'N', 'N'),
+    solicitacao_grupo:  r('T', 'P', 'N', 'P'),
     matriz:             r('N', 'N', 'N', 'N'),
   },
 
@@ -109,6 +113,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('N', 'T', 'N', 'N'),
     usuario:            r('N', 'T', 'N', 'N'),
     solicitacao_perfil: r('T', 'P', 'N', 'N'),
+    solicitacao_grupo:  r('T', 'T', 'N', 'N'),
     matriz:             r('N', 'T', 'N', 'N'),
   },
 
@@ -125,6 +130,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('T', 'T', 'T', 'T'),
     usuario:            r('N', 'N', 'N', 'N'),
     solicitacao_perfil: r('T', 'P', 'N', 'N'),
+    solicitacao_grupo:  r('T', 'P', 'N', 'P'),
     matriz:             r('N', 'N', 'N', 'N'),
   },
 
@@ -141,6 +147,7 @@ export const DEFAULT_MATRIX: PermissionMatrix = {
     banner:             r('N', 'T', 'N', 'N'),
     usuario:            r('N', 'P', 'N', 'N'),
     solicitacao_perfil: r('T', 'P', 'N', 'P'),
+    solicitacao_grupo:  r('T', 'P', 'N', 'P'),
     matriz:             r('N', 'N', 'N', 'N'),
   },
 };
