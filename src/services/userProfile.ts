@@ -46,7 +46,11 @@ export async function updateUserProfile(
   const clean = Object.fromEntries(
     Object.entries(data).filter(([, v]) => v !== undefined)
   );
-  await updateDoc(doc(db, COL, uid), clean);
+  // setDoc com merge, nunca updateDoc: updateDoc falha quando o documento não
+  // existe, e é exatamente esse o caso de quem teve a criação do perfil negada
+  // no primeiro login. Com updateDoc, essas pessoas ficavam presas na tela de
+  // completar perfil — a única saída que tinham também quebrava.
+  await setDoc(doc(db, COL, uid), clean, { merge: true });
 }
 
 // Sem orderBy no Firestore: a cláusula exclui documentos sem o campo 'name',
