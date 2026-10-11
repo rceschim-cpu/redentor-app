@@ -14,6 +14,7 @@ import {
 import { deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { GroupMembership, MembershipStatus } from '../types';
+import { sendNotification } from './notifications';
 
 const MEMBERSHIPS = (groupId: string) => `groups/${groupId}/memberships`;
 
@@ -28,6 +29,7 @@ export async function getMemberships(groupId: string): Promise<GroupMembership[]
     .sort((a, b) => a.userName.localeCompare(b.userName));
 }
 
+/** Pedidos que o líder precisa aprovar. Convites não entram: quem responde a eles é o convidado. */
 export async function getPendingRequests(groupId: string): Promise<GroupMembership[]> {
   const q = query(
     collection(db, MEMBERSHIPS(groupId)),
@@ -36,7 +38,21 @@ export async function getPendingRequests(groupId: string): Promise<GroupMembersh
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() } as GroupMembership))
-    .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
+    .filter((m) => m.origin !== 'convite')
+    .sort((a, b) => (a.requestedAt ?? '').localeCompare(b.requestedAt ?? ''));
+}
+
+/** Convites já enviados e ainda sem resposta — mostrados ao líder como "aguardando". */
+export async function getPendingInvites(groupId: string): Promise<GroupMembership[]> {
+  const q = query(
+    collection(db, MEMBERSHIPS(groupId)),
+    where('status', '==', 'pendente')
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as GroupMembership))
+    .filter((m) => m.origin === 'convite')
+    .sort((a, b) => (a.userName ?? '').localeCompare(b.userName ?? '', 'pt-BR'));
 }
 
 export async function getUserMembership(
@@ -223,4 +239,132 @@ export async function transferMember(
       }
     }
   } catch { /* não-crítico */ }
+}
+
+
+// ─── Convites: o líder chama, a pessoa decide ─────────────────────────────────
+//
+// O caminho inverso do pedido. O vínculo nasce 'pendente' com origin 'convite'
+// e só vira 'aprovado' quando o convidado aceita — ninguém entra num grupo sem
+// ter dito sim.
+//
+// pendingCount NÃO é tocado aqui: esse contador conta o que o líder precisa
+// resolver, e um convite espera pelo convidado, não por ele.
+
+export async function inviteToGroup(
+  groupId: string,
+  groupName: string,
+  target: { userId: string; userName: string; userEmail: string },
+  invitedBy: string,
+  invitedByName: string
+): Promise<string> {
+  const existing = await getUserMembership(groupId, target.userId);
+  if (existing) {
+    if (existing.status === 'aprovado') throw new Error(`${target.userName} já está neste grupo.`);
+    if (existing.status === 'pendente') {
+      throw new Error(
+        existing.origin === 'convite'
+          ? `${target.userName} já tem um convite deste grupo aguardando resposta.`
+          : `${target.userName} já pediu para entrar neste grupo — aprove a solicitação.`
+      );
+    }
+  }
+
+  const ref = await addDoc(collection(db, MEMBERSHIPS(groupId)), {
+    groupId,
+    groupName,
+    userId: target.userId,
+    userName: target.userName,
+    userEmail: target.userEmail,
+    status: 'pendente' as MembershipStatus,
+    origin: 'convite',
+    invitedBy,
+    invitedByName,
+    requestedAt: new Date().toISOString(),
+  });
+
+  // Best-effort: o convite já existe e aparece no app mesmo sem a notificação
+  try {
+    await sendNotification(
+      target.userId,
+      'Convite para um pequeno grupo',
+      `${invitedByName} convidou você para o grupo ${groupName}.`,
+      'group_invite',
+      { groupId, groupName, membershipId: ref.id }
+    );
+  } catch {
+    // silencioso
+  }
+
+  return ref.id;
+}
+
+/**
+ * Convites pendentes de uma pessoa, em todos os grupos.
+ *
+ * Varredura linear pelos grupos: a comunidade tem poucas dezenas deles, e uma
+ * consulta por collection group exigiria um índice composto no Firestore.
+ */
+export async function getMyInvites(userId: string): Promise<GroupMembership[]> {
+  const groupsSnap = await getDocs(collection(db, 'groups'));
+  const found: GroupMembership[] = [];
+
+  await Promise.all(
+    groupsSnap.docs.map(async (g) => {
+      try {
+        const q = query(
+          collection(db, MEMBERSHIPS(g.id)),
+          where('userId', '==', userId),
+          where('status', '==', 'pendente')
+        );
+        const snap = await getDocs(q);
+        snap.docs.forEach((d) => {
+          const m = { id: d.id, ...d.data() } as GroupMembership;
+          if (m.origin === 'convite') {
+            found.push({ ...m, groupId: g.id, groupName: m.groupName ?? g.data().name });
+          }
+        });
+      } catch {
+        // um grupo ilegível não derruba os demais
+      }
+    })
+  );
+
+  return found.sort((a, b) => (b.requestedAt ?? '').localeCompare(a.requestedAt ?? ''));
+}
+
+export async function acceptInvite(
+  groupId: string,
+  membershipId: string,
+  userId: string
+): Promise<void> {
+  const batch = writeBatch(db);
+  batch.update(doc(db, MEMBERSHIPS(groupId), membershipId), {
+    status: 'aprovado' as MembershipStatus,
+    resolvedAt: new Date().toISOString(),
+    resolvedBy: userId,
+  });
+  batch.update(doc(db, 'groups', groupId), { memberCount: increment(1) });
+  await batch.commit();
+
+  // Espelha o vínculo no cadastro de membro, como faz a aprovação de pedido
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    if (userSnap.exists()) {
+      const memberId = userSnap.data().memberId as string | undefined;
+      if (memberId) await updateDoc(doc(db, 'members', memberId), { groupId });
+    }
+  } catch {
+    // não-crítico
+  }
+}
+
+/** Recusar apaga o convite: sem registro pendente, o líder pode convidar de novo. */
+export async function declineInvite(groupId: string, membershipId: string): Promise<void> {
+  await deleteDoc(doc(db, MEMBERSHIPS(groupId), membershipId));
+}
+
+/** O líder desiste de um convite ainda sem resposta. */
+export async function cancelInvite(groupId: string, membershipId: string): Promise<void> {
+  await deleteDoc(doc(db, MEMBERSHIPS(groupId), membershipId));
 }

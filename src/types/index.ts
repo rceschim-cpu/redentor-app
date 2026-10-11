@@ -42,7 +42,7 @@ export interface AppNotification {
   id: string;
   title: string;
   body: string;
-  type: 'join_request' | 'parking' | 'general' | 'role_request' | 'group_request';
+  type: 'join_request' | 'parking' | 'general' | 'role_request' | 'group_request' | 'group_invite';
   read: boolean;
   createdAt: string;
   metadata?: {
@@ -52,6 +52,7 @@ export interface AppNotification {
     memberName?: string;
     requestId?: string;
     requestedRole?: UserRole;
+    membershipId?: string;
   };
 }
 
@@ -147,6 +148,9 @@ export interface Group {
 // ─── Solicitação de ingresso em PG ───────────────────────────────────────────
 export type MembershipStatus = 'pendente' | 'aprovado' | 'rejeitado';
 
+// Quem deu o primeiro passo. Ausente = 'pedido' (vínculos anteriores ao convite)
+export type MembershipOrigin = 'pedido' | 'convite';
+
 export interface GroupMembership {
   id: string;
   groupId: string;
@@ -157,6 +161,10 @@ export interface GroupMembership {
   requestedAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
+  origin?: MembershipOrigin;
+  invitedBy?: string;
+  invitedByName?: string;
+  groupName?: string;   // desnormalizado: o convite é lido fora da tela do grupo
 }
 
 // ─── Materiais de Pequenos Grupos ─────────────────────────────────────────────

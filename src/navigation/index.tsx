@@ -25,6 +25,7 @@ import BannersScreen from '../screens/BannersScreen';
 import PermissionsMatrixScreen from '../screens/PermissionsMatrixScreen';
 import RoleRequestsScreen from '../screens/RoleRequestsScreen';
 import GroupRequestsScreen from '../screens/GroupRequestsScreen';
+import InviteToGroupScreen from '../screens/InviteToGroupScreen';
 import BibleScreen from '../screens/BibleScreen';
 import {
   MembersListScreen,
@@ -153,6 +154,7 @@ function GroupsStackScreen() {
       <GroupStack.Screen name="GroupDetail"         component={GroupDetailScreen}          options={{ title: '' }} />
       <GroupStack.Screen name="AddGroup"            component={AddGroupScreen}             options={{ title: 'Novo Grupo' }} />
       <GroupStack.Screen name="GroupMemberRequests" component={GroupMemberRequestsScreen}  options={{ title: 'Solicitações' }} />
+      <GroupStack.Screen name="InviteToGroup" component={InviteToGroupScreen} options={{ title: 'Convidar membros' }} />
       <GroupStack.Screen name="GroupMaterials"      component={GroupMaterialsScreen}       options={{ title: 'Materiais' }} />
       <GroupStack.Screen name="MemberDetail"        component={MemberDetailScreen}         options={{ title: '' }} />
     </GroupStack.Navigator>

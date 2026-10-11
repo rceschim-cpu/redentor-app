@@ -16,7 +16,8 @@ import { Colors, Spacing, Radius } from '../theme';
 import { AppText as Text, Avatar, Card, DetailRow, PrimaryButton } from '../components';
 import { Group, GroupMembership, GroupMaterial } from '../types';
 import { getGroups, getGroup, updateGroup, deleteGroup } from '../services/groups';
-import { getMemberships, getPendingRequests, getUserMembership, requestToJoin, removeMember, transferMember } from '../services/memberships';
+import { getMemberships, getPendingRequests, getUserMembership, requestToJoin, removeMember, transferMember,
+  getMyInvites, acceptInvite, declineInvite } from '../services/memberships';
 import { getMaterials, uploadMaterial, deleteMaterial } from '../services/materials';
 import { can, canOn } from '../services/permissions';
 import { showAlert, showConfirm } from '../utils/alert';
@@ -69,10 +70,23 @@ export function GroupsListScreen({ navigation }: any) {
   const [pendingTitle, setPendingTitle] = useState('');
   const [uploading, setUploading] = useState(false);
 
+  // Convites recebidos: o líder chamou, falta esta pessoa responder
+  const [invites, setInvites] = useState<GroupMembership[]>([]);
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+
   // Todo mundo vê o botão: quem não cria direto cai no fluxo de solicitação
   const canCreate = can(appUser?.role, 'grupo', 'criar')
     || can(appUser?.role, 'solicitacao_grupo', 'criar');
   const canUploadMaterials = can(appUser?.role, 'material_geral', 'criar');
+
+  const loadInvites = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      setInvites(await getMyInvites(user.uid));
+    } catch {
+      // acessório da tela: a lista de grupos continua valendo
+    }
+  }, [user?.uid]);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,8 +95,27 @@ export function GroupsListScreen({ navigation }: any) {
         .then(setGroups)
         .catch(() => Alert.alert('Erro', 'Não foi possível carregar os grupos.'))
         .finally(() => setLoading(false));
-    }, [])
+      loadInvites();
+    }, [loadInvites])
   );
+
+  async function respondInvite(invite: GroupMembership, accept: boolean) {
+    if (!user?.uid) return;
+    setAnsweringId(invite.id);
+    try {
+      if (accept) {
+        await acceptInvite(invite.groupId, invite.id, user.uid);
+        showAlert('Pronto', `Você entrou no grupo ${invite.groupName ?? ''}.`.trim());
+      } else {
+        await declineInvite(invite.groupId, invite.id);
+      }
+      await Promise.all([loadInvites(), getGroups().then(setGroups).catch(() => {})]);
+    } catch (e: any) {
+      showAlert('Erro', e?.message ?? 'Não foi possível responder ao convite.');
+    } finally {
+      setAnsweringId(null);
+    }
+  }
 
   const handleMaterialsTab = () => {
     setActiveTab('materiais');
@@ -173,6 +206,44 @@ export function GroupsListScreen({ navigation }: any) {
               data={groups}
               keyExtractor={(g) => g.id}
               contentContainerStyle={styles.list}
+              ListHeaderComponent={
+                invites.length > 0 ? (
+                  <View style={{ gap: 10, marginBottom: 4 }}>
+                    {invites.map((inv) => (
+                      <View key={inv.id} style={styles.inviteCard}>
+                        <View>
+                          <Text style={styles.inviteCardTitle}>
+                            Convite para {inv.groupName ?? 'um pequeno grupo'}
+                          </Text>
+                          <Text style={styles.inviteCardSub}>
+                            {inv.invitedByName
+                              ? `${inv.invitedByName} convidou você.`
+                              : 'Você foi convidado.'} Entrar é sua escolha.
+                          </Text>
+                        </View>
+                        <View style={styles.inviteActions}>
+                          <TouchableOpacity
+                            style={styles.inviteGhost}
+                            onPress={() => respondInvite(inv, false)}
+                            disabled={answeringId === inv.id}
+                          >
+                            <Text style={styles.inviteGhostText}>Agora não</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.inviteAccept}
+                            onPress={() => respondInvite(inv, true)}
+                            disabled={answeringId === inv.id}
+                          >
+                            {answeringId === inv.id
+                              ? <ActivityIndicator color="#fff" />
+                              : <Text style={styles.inviteAcceptText}>Entrar no grupo</Text>}
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ) : null
+              }
               ListEmptyComponent={
                 <View style={styles.emptyWrap}>
                   <Text style={styles.emptyIcon}>🏘️</Text>
@@ -569,6 +640,19 @@ export function GroupDetailScreen({ route, navigation }: any) {
             </TouchableOpacity>
           )}
 
+          {isManager && (
+            <TouchableOpacity
+              style={styles.inviteBtn}
+              onPress={() => navigation.navigate('InviteToGroup', {
+                groupId: group.id,
+                groupName: group.name,
+              })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.inviteBtnText}>+ Convidar membros</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Membros aprovados */}
           {members.length > 0 && (
             <>
@@ -697,6 +781,43 @@ export function GroupDetailScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  inviteBtn: {
+    marginTop: 4,
+    marginBottom: 16,
+    minHeight: 48,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+
+  inviteCard: {
+    backgroundColor: '#EDF2F9',
+    borderWidth: 1,
+    borderColor: '#C3D2E6',
+    borderRadius: Radius.lg,
+    padding: 16,
+    marginBottom: 10,
+    gap: 12,
+  },
+  inviteCardTitle: { fontSize: 15, fontWeight: '700', color: '#1F3E6B', lineHeight: 21 },
+  inviteCardSub: { fontSize: 13, color: '#35598F', lineHeight: 18 },
+  inviteActions: { flexDirection: 'row', gap: 10 },
+  inviteGhost: {
+    flex: 1, minHeight: 44, borderRadius: Radius.md,
+    borderWidth: 1.5, borderColor: '#A9BBD6',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  inviteGhostText: { fontSize: 14, fontWeight: '600', color: '#35598F' },
+  inviteAccept: {
+    flex: 1.4, minHeight: 44, borderRadius: Radius.md,
+    backgroundColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  inviteAcceptText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.md, gap: 10 },
