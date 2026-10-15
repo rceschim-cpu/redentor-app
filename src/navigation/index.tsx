@@ -229,12 +229,17 @@ function AppNavigator() {
 }
 
 export default function RootNavigator() {
-  const { user, appUser, loading } = useAuth();
+  const { user, appUser, loading, profilePersisted } = useAuth();
 
   // Decidido por estado persistido, nunca por flag de sessão: quem se cadastrava
   // e fechava o app antes de preencher o formulário nunca mais o via, e por isso
   // nunca ganhava registro em /members — ficava invisível na tela de Membros.
-  const needsProfile = !!user && !appUser?.memberId && !appUser?.profileComplete;
+  //
+  // profilePersisted na condição: sem ele, quem não consegue gravar no Firestore
+  // caía no formulário e ficava preso, porque salvar o formulário falha pelo
+  // mesmo motivo. Entrar no app incompleto, com o aviso, é melhor que não entrar.
+  const needsProfile =
+    !!user && profilePersisted && !appUser?.memberId && !appUser?.profileComplete;
 
   if (loading) {
     return (

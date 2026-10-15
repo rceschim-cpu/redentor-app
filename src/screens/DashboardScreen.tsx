@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../theme';
@@ -75,7 +76,7 @@ function GeometricBg() {
 
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 export default function DashboardScreen({ navigation }: any) {
-  const { user, appUser, profilePersisted } = useAuth();
+  const { user, appUser, profilePersisted, profileError } = useAuth();
   const { bannerImages } = useBanners();
   const [search, setSearch] = useState('');
   const [activeBanner, setActiveBanner] = useState(0);
@@ -123,9 +124,13 @@ export default function DashboardScreen({ navigation }: any) {
       {!profilePersisted && (
         <View style={styles.profileWarn}>
           <Text style={styles.profileWarnText}>
-            Seu cadastro não pôde ser salvo. Você aparece no app, mas ainda não
-            na lista da comunidade. Feche e abra o app novamente.
+            Seu cadastro não pôde ser salvo. Você consegue usar o app, mas ainda
+            não aparece na lista da comunidade. Feche e abra o app novamente — se
+            o aviso continuar, mostre esta tela para quem cuida do aplicativo.
           </Text>
+          {profileError ? (
+            <Text style={styles.profileWarnCode} selectable>{profileError}</Text>
+          ) : null}
         </View>
       )}
 
@@ -314,6 +319,11 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   profileWarnText: { fontSize: 13, color: '#8C2F22', lineHeight: 19 },
+  profileWarnCode: {
+    marginTop: 8, fontSize: 11, color: '#6E2318',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    lineHeight: 16,
+  },
   container: { flex: 1, backgroundColor: BG },
 
   // Header com logo | saudação | avatar
